@@ -208,12 +208,7 @@ export default function App() {
     const handleBeforeInstall = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      (window as any).deferredPrompt = e;
     };
-
-    if ((window as any).deferredPrompt) {
-      setDeferredPrompt((window as any).deferredPrompt);
-    }
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
 

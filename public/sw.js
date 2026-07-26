@@ -1,4 +1,4 @@
-const CACHE_NAME = 'smart-planner-pwa-v3';
+const CACHE_NAME = 'smart-planner-pwa-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
