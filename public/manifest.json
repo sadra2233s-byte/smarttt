@@ -7,9 +7,9 @@
   "theme_color": "#0f766e",
   "icons": [
     {
-      "src": "/notebook_app_icon.jpg",
-      "sizes": "1024x1024",
-      "type": "image/jpeg",
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
       "purpose": "any maskable"
     }
   ]
