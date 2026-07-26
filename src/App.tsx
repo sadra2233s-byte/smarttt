@@ -96,7 +96,7 @@ const INITIAL_SAMPLE_STATE: AppState = {
       title: 'مرور کدهای وب‌اپلیکیشن Smart Planner',
       timeWindow: '11:00 - 13:00',
       summary: 'تست ریسپانسو و همگام‌سازی گوگل درایو',
-      detailedDescription: 'تست قابلیت ذخیره آفلاین محلی، عملکرد تقویم شمسی و خروجی ورد.',
+      detailedDescription: 'تست قابلیت ذخیره آفلاین محلی، عملکرد تقویم شمسی و خروجی PDF.',
       isCompleted: false,
       createdAtISO: '2026-07-25',
     },

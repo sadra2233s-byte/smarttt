@@ -217,15 +217,15 @@ export const Header: React.FC<HeaderProps> = ({
               <span>فایل JSON</span>
             </button>
 
-            {/* Word DOCX Export option */}
+            {/* PDF Export option */}
             <button
               type="button"
               onClick={onOpenWordModal}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all"
-              title="ساخت و دانلود گزارش Word"
+              title="ساخت و دانلود گزارش PDF"
             >
               <FileText className="w-3.5 h-3.5" />
-              <span>ساخت ورد</span>
+              <span>ساخت PDF</span>
             </button>
           </div>
 
@@ -268,7 +268,7 @@ export const Header: React.FC<HeaderProps> = ({
                   <span>انتقال آفلاین / فایل JSON</span>
                 </button>
 
-                {/* Word export inside 3 dots */}
+                {/* PDF export inside 3 dots */}
                 <button
                   type="button"
                   onClick={() => {
@@ -278,7 +278,7 @@ export const Header: React.FC<HeaderProps> = ({
                   className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-teal-800 bg-teal-50 hover:bg-teal-100 rounded-xl transition-colors text-right"
                 >
                   <FileText className="w-4 h-4 text-teal-600" />
-                  <span>ساخت فایل Word</span>
+                  <span>ساخت فایل PDF</span>
                 </button>
               </div>
             )}

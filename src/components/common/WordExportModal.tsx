@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { FileText, Download, Calendar, Check, X, Loader2 } from 'lucide-react';
+import { jsPDF } from 'jspdf';
+import { toJpeg } from 'html-to-image';
 import {
   Document,
   Packer,
@@ -59,6 +61,7 @@ export const WordExportModal: React.FC<WordExportModalProps> = ({
   const [includeFinances, setIncludeFinances] = useState(true);
 
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   // Active Date Picker State
   const [activePickerField, setActivePickerField] = useState<string | null>(null);
@@ -76,152 +79,152 @@ export const WordExportModal: React.FC<WordExportModalProps> = ({
     if (activePickerField === 'financesEnd') setFinancesEndDate(isoDate);
   };
 
+  // Helper to check if a habit is completed on a specific date
+  const isHabitCompletedOnDate = (habit: Habit, date: Date): boolean => {
+    const matchingHabits = appState.habits.filter((h) => h.title.trim() === habit.title.trim());
+    const sow = getStartOfWeekJalali(date);
+    const sowKey = formatISODateOnly(sow);
+    const weekDays = getWeekDaysJalali(sow);
+    const dayIdx = weekDays.findIndex((wd) => formatISODateOnly(wd) === formatISODateOnly(date));
+
+    if (dayIdx === -1) return false;
+
+    let weekData: boolean[] | undefined = undefined;
+    for (const h of matchingHabits) {
+      if (h.weekHistory && h.weekHistory[sowKey] !== undefined) {
+        weekData = h.weekHistory[sowKey];
+        break;
+      }
+    }
+
+    if (!weekData && habit.weekHistory) {
+      weekData = habit.weekHistory[sowKey];
+    }
+
+    return weekData ? !!weekData[dayIdx] : false;
+  };
+
+  // Helper to compute a habit's streak
+  const getHabitStreak = (habit: Habit): number => {
+    const matchingHabits = appState.habits.filter((h) => h.title.trim() === habit.title.trim());
+    const earliestCreationISO = matchingHabits.reduce((earliest, h) => {
+      return h.createdAtISO && h.createdAtISO < earliest ? h.createdAtISO : earliest;
+    }, habit.createdAtISO || formatISODateOnly(new Date()));
+
+    const getStatusForDate = (d: Date) => {
+      const sow = getStartOfWeekJalali(d);
+      const sowKey = formatISODateOnly(sow);
+      const weekDays = getWeekDaysJalali(sow);
+      const dayIdx = weekDays.findIndex((wd) => formatISODateOnly(wd) === formatISODateOnly(d));
+
+      if (dayIdx === -1) return { isDone: false, isDisabled: false, isAbsent: true };
+
+      const dateStr = formatISODateOnly(d);
+      if (dateStr < earliestCreationISO) {
+        return { isDone: false, isDisabled: false, isAbsent: true };
+      }
+
+      let weekData: boolean[] | undefined = undefined;
+      let targetDisabled: boolean[] = habit.disabledDays || [false, false, false, false, false, false, false];
+
+      for (const h of matchingHabits) {
+        if (h.weekHistory && h.weekHistory[sowKey] !== undefined) {
+          weekData = h.weekHistory[sowKey];
+          if (h.disabledDays) targetDisabled = h.disabledDays;
+          break;
+        }
+      }
+
+      if (!weekData && habit.weekHistory) {
+        weekData = habit.weekHistory[sowKey];
+      }
+
+      const isDisabled = !!targetDisabled[dayIdx];
+      const isDone = weekData ? !!weekData[dayIdx] : false;
+
+      return { isDone, isDisabled, isAbsent: false };
+    };
+
+    const today = new Date();
+    today.setHours(12, 0, 0, 0);
+
+    let latestDoneDate: Date | null = null;
+    for (let offset = -14; offset <= 365; offset++) {
+      const checkD = new Date(today.getTime() - offset * 86400000);
+      const st = getStatusForDate(checkD);
+      if (st.isDone) {
+        latestDoneDate = checkD;
+        break;
+      }
+    }
+
+    if (!latestDoneDate) {
+      return 0;
+    }
+
+    if (latestDoneDate < today) {
+      let gapValid = true;
+      let checkGap = new Date(today.getTime() - 86400000);
+      while (checkGap > latestDoneDate) {
+        const st = getStatusForDate(checkGap);
+        if (!st.isDisabled && !st.isAbsent) {
+          gapValid = false;
+          break;
+        }
+        checkGap = new Date(checkGap.getTime() - 86400000);
+      }
+      const todaySt = getStatusForDate(today);
+      if (!todaySt.isDisabled && !todaySt.isAbsent && !todaySt.isDone && !gapValid) {
+        return 0;
+      }
+    }
+
+    let streak = 0;
+    let curr = new Date(latestDoneDate.getTime());
+    for (let step = 0; step < 365; step++) {
+      const st = getStatusForDate(curr);
+      if (st.isAbsent) break;
+      if (st.isDisabled) {
+        curr = new Date(curr.getTime() - 86400000);
+        continue;
+      }
+      if (st.isDone) {
+        streak++;
+        curr = new Date(curr.getTime() - 86400000);
+      } else {
+        break;
+      }
+    }
+
+    return streak;
+  };
+
+  // Helper to compute completed habit days in a specific range
+  const getHabitCompletedCountInRange = (habit: Habit, startStr: string, endStr: string): number => {
+    try {
+      const startD = new Date(startStr);
+      const endD = new Date(endStr);
+      let count = 0;
+      let curr = new Date(startD.getTime());
+      let safety = 0;
+      while (curr <= endD && safety < 1000) {
+        if (isHabitCompletedOnDate(habit, curr)) {
+          count++;
+        }
+        curr.setDate(curr.getDate() + 1);
+        safety++;
+      }
+      return count;
+    } catch (err) {
+      console.error("Error computing completed count in range:", err);
+      return 0;
+    }
+  };
+
   const generateWordDoc = async () => {
     setIsGenerating(true);
     try {
       const docChildren: any[] = [];
-
-      // Helper to check if a habit is completed on a specific date
-      const isHabitCompletedOnDate = (habit: Habit, date: Date): boolean => {
-        const matchingHabits = appState.habits.filter((h) => h.title.trim() === habit.title.trim());
-        const sow = getStartOfWeekJalali(date);
-        const sowKey = formatISODateOnly(sow);
-        const weekDays = getWeekDaysJalali(sow);
-        const dayIdx = weekDays.findIndex((wd) => formatISODateOnly(wd) === formatISODateOnly(date));
-
-        if (dayIdx === -1) return false;
-
-        let weekData: boolean[] | undefined = undefined;
-        for (const h of matchingHabits) {
-          if (h.weekHistory && h.weekHistory[sowKey] !== undefined) {
-            weekData = h.weekHistory[sowKey];
-            break;
-          }
-        }
-
-        if (!weekData && habit.weekHistory) {
-          weekData = habit.weekHistory[sowKey];
-        }
-
-        return weekData ? !!weekData[dayIdx] : false;
-      };
-
-      // Helper to compute a habit's streak
-      const getHabitStreak = (habit: Habit): number => {
-        const matchingHabits = appState.habits.filter((h) => h.title.trim() === habit.title.trim());
-        const earliestCreationISO = matchingHabits.reduce((earliest, h) => {
-          return h.createdAtISO && h.createdAtISO < earliest ? h.createdAtISO : earliest;
-        }, habit.createdAtISO || formatISODateOnly(new Date()));
-
-        const getStatusForDate = (d: Date) => {
-          const sow = getStartOfWeekJalali(d);
-          const sowKey = formatISODateOnly(sow);
-          const weekDays = getWeekDaysJalali(sow);
-          const dayIdx = weekDays.findIndex((wd) => formatISODateOnly(wd) === formatISODateOnly(d));
-
-          if (dayIdx === -1) return { isDone: false, isDisabled: false, isAbsent: true };
-
-          const dateStr = formatISODateOnly(d);
-          if (dateStr < earliestCreationISO) {
-            return { isDone: false, isDisabled: false, isAbsent: true };
-          }
-
-          let weekData: boolean[] | undefined = undefined;
-          let targetDisabled: boolean[] = habit.disabledDays || [false, false, false, false, false, false, false];
-
-          for (const h of matchingHabits) {
-            if (h.weekHistory && h.weekHistory[sowKey] !== undefined) {
-              weekData = h.weekHistory[sowKey];
-              if (h.disabledDays) targetDisabled = h.disabledDays;
-              break;
-            }
-          }
-
-          if (!weekData && habit.weekHistory) {
-            weekData = habit.weekHistory[sowKey];
-          }
-
-          const isDisabled = !!targetDisabled[dayIdx];
-          const isDone = weekData ? !!weekData[dayIdx] : false;
-
-          return { isDone, isDisabled, isAbsent: false };
-        };
-
-        const today = new Date();
-        today.setHours(12, 0, 0, 0);
-
-        let latestDoneDate: Date | null = null;
-        for (let offset = -14; offset <= 365; offset++) {
-          const checkD = new Date(today.getTime() - offset * 86400000);
-          const st = getStatusForDate(checkD);
-          if (st.isDone) {
-            latestDoneDate = checkD;
-            break;
-          }
-        }
-
-        if (!latestDoneDate) {
-          return 0;
-        }
-
-        if (latestDoneDate < today) {
-          let gapValid = true;
-          let checkGap = new Date(today.getTime() - 86400000);
-          while (checkGap > latestDoneDate) {
-            const st = getStatusForDate(checkGap);
-            if (!st.isDisabled && !st.isAbsent) {
-              gapValid = false;
-              break;
-            }
-            checkGap = new Date(checkGap.getTime() - 86400000);
-          }
-          const todaySt = getStatusForDate(today);
-          if (!todaySt.isDisabled && !todaySt.isAbsent && !todaySt.isDone && !gapValid) {
-            return 0;
-          }
-        }
-
-        let streak = 0;
-        let curr = new Date(latestDoneDate.getTime());
-        for (let step = 0; step < 365; step++) {
-          const st = getStatusForDate(curr);
-          if (st.isAbsent) break;
-          if (st.isDisabled) {
-            curr = new Date(curr.getTime() - 86400000);
-            continue;
-          }
-          if (st.isDone) {
-            streak++;
-            curr = new Date(curr.getTime() - 86400000);
-          } else {
-            break;
-          }
-        }
-
-        return streak;
-      };
-
-      // Helper to compute completed habit days in a specific range
-      const getHabitCompletedCountInRange = (habit: Habit, startStr: string, endStr: string): number => {
-        try {
-          const startD = new Date(startStr);
-          const endD = new Date(endStr);
-          let count = 0;
-          let curr = new Date(startD.getTime());
-          let safety = 0;
-          while (curr <= endD && safety < 1000) {
-            if (isHabitCompletedOnDate(habit, curr)) {
-              count++;
-            }
-            curr.setDate(curr.getDate() + 1);
-            safety++;
-          }
-          return count;
-        } catch (err) {
-          console.error("Error computing completed count in range:", err);
-          return 0;
-        }
-      };
 
       // Helper to make a styled Table Cell with RTL and padding
       const createCell = (text: string, options: {
@@ -883,9 +886,339 @@ export const WordExportModal: React.FC<WordExportModalProps> = ({
       onClose();
     } catch (err) {
       console.error('Word generation error:', err);
-      alert('خطا در تولید فایل ورد.');
+      alert('خطا در تولید فایل PDF.');
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const generatePdfDoc = async () => {
+    setIsGeneratingPdf(true);
+    try {
+      // Filter state data first
+      const filteredTasks = appState.tasks.filter((t) => {
+        const d = t.createdDateISO || '2026-01-01';
+        return d >= tasksStartDate && d <= tasksEndDate;
+      });
+
+      const filteredHabitsForExport = appState.habits.filter((h) => {
+        const d = h.createdAtISO || '2026-01-01';
+        return d >= habitsStartDate && d <= habitsEndDate;
+      });
+
+      const filteredDaily = appState.dailyTasks.filter((dt) => {
+        return dt.dateStr >= dailyStartDate && dt.dateStr <= dailyEndDate;
+      });
+
+      const filteredFin = appState.financials.filter((f) => {
+        return f.dateISO >= financesStartDate && f.dateISO <= financesEndDate;
+      });
+
+      // Stats Calculations
+      const completedTasksCount = filteredTasks.filter(t => t.status === 'completed').length;
+      const taskCompletionRate = filteredTasks.length ? Math.round((completedTasksCount / filteredTasks.length) * 100) : 0;
+      const totalHabits = filteredHabitsForExport.length;
+      const totalDaily = filteredDaily.length;
+      const completedDaily = filteredDaily.filter(d => d.isCompleted).length;
+      const totalIncome = filteredFin.filter(f => f.type === 'income').reduce((sum, f) => sum + f.amount, 0);
+      const totalExpense = filteredFin.filter(f => f.type === 'expense').reduce((sum, f) => sum + f.amount, 0);
+      const netSavings = totalIncome - totalExpense;
+
+      // 1. Create offscreen container styled like a premium A4 document
+      const container = document.createElement('div');
+      container.style.position = 'absolute';
+      container.style.left = '0';
+      container.style.top = '0';
+      container.style.width = '800px';
+      container.style.backgroundColor = '#ffffff';
+      container.style.color = '#1e293b';
+      container.style.direction = 'rtl';
+      container.style.fontFamily = "'Vazirmatn', 'Segoe UI', system-ui, sans-serif";
+      container.style.padding = '40px';
+      container.style.zIndex = '-10000'; // Hide behind content
+
+      // Build HTML
+      container.innerHTML = `
+        <div style="font-family: 'Vazirmatn', 'Segoe UI', sans-serif;">
+          <!-- Top Header Brand -->
+          <div style="border-bottom: 3px solid #0f766e; padding-bottom: 16px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-end;">
+            <div>
+              <h1 style="font-size: 20px; font-weight: bold; color: #0f766e; margin: 0;">گزارش عملکرد پلنر هوشمند (Smart Planner)</h1>
+              <p style="font-size: 11px; color: #64748b; margin: 4px 0 0 0;">سازمان‌دهی اهداف، عادات، کارهای روزانه و امور مالی</p>
+            </div>
+            <div style="text-align: left;">
+              <p style="font-size: 10px; color: #64748b; margin: 0;">تاریخ تولید گزارش: ${toPersianDigits(formatJalaliShort(new Date()))}</p>
+            </div>
+          </div>
+
+          <!-- Summary Cards -->
+          ${(includeTasks || includeHabits || includeDaily || includeFinances) ? `
+          <div style="margin-bottom: 24px;">
+            <h2 style="font-size: 13px; font-weight: bold; color: #0f766e; margin-bottom: 12px;">📊 خلاصه وضعیت عملکرد در بازه‌های انتخابی:</h2>
+            <div style="display: flex; gap: 12px; width: 100%;">
+              ${includeTasks ? `
+              <div style="flex: 1; padding: 12px; background-color: #f0fdfa; border: 1px solid #ccfbf1; border-radius: 12px;">
+                <h3 style="font-size: 11px; font-weight: bold; color: #115e59; margin: 0 0 8px 0;">وظایف و اهداف استراتژیک</h3>
+                <div style="font-size: 10px; color: #334155; line-height: 1.6;">
+                  <div>• کل وظایف: <strong>${toPersianDigits(filteredTasks.length)}</strong></div>
+                  <div>• انجام شده: <strong style="color: #16a34a;">${toPersianDigits(completedTasksCount)}</strong></div>
+                  <div>• درصد موفقیت: <strong style="color: #0d9488;">${toPersianDigits(taskCompletionRate)}٪</strong></div>
+                </div>
+              </div>
+              ` : ''}
+
+              ${(includeHabits || includeDaily) ? `
+              <div style="flex: 1; padding: 12px; background-color: #eef2ff; border: 1px solid #e0e7ff; border-radius: 12px;">
+                <h3 style="font-size: 11px; font-weight: bold; color: #3730a3; margin: 0 0 8px 0;">عادات و برنامه‌های روزانه</h3>
+                <div style="font-size: 10px; color: #334155; line-height: 1.6;">
+                  ${includeHabits ? `<div>• عادات پایش شده: <strong>${toPersianDigits(totalHabits)} مورد</strong></div>` : ''}
+                  ${includeDaily ? `
+                  <div>• برنامه‌های روزانه: <strong>${toPersianDigits(totalDaily)} فعالیت</strong></div>
+                  <div>• کارهای تکمیل شده: <strong style="color: #16a34a;">${toPersianDigits(completedDaily)} مورد</strong></div>
+                  ` : ''}
+                </div>
+              </div>
+              ` : ''}
+
+              ${includeFinances ? `
+              <div style="flex: 1; padding: 12px; background-color: #fffbeb; border: 1px solid #fef3c7; border-radius: 12px;">
+                <h3 style="font-size: 11px; font-weight: bold; color: #92400e; margin: 0 0 8px 0;">امور مالی و بودجه‌ریزی</h3>
+                <div style="font-size: 10px; color: #334155; line-height: 1.6;">
+                  <div>• درآمد: <strong style="color: #16a34a;">${toPersianDigits(totalIncome.toLocaleString())} تومان</strong></div>
+                  <div>• هزینه‌ها: <strong style="color: #dc2626;">${toPersianDigits(totalExpense.toLocaleString())} تومان</strong></div>
+                  <div>• تراز مالی: <strong style="color: ${netSavings >= 0 ? '#16a34a' : '#dc2626'};">${toPersianDigits(netSavings.toLocaleString())} تومان</strong></div>
+                </div>
+              </div>
+              ` : ''}
+            </div>
+          </div>
+          ` : ''}
+
+          <!-- Section 1: Tasks -->
+          ${includeTasks ? `
+          <div style="margin-bottom: 24px;">
+            <div style="border-right: 4px solid #0f766e; padding-right: 8px; margin-bottom: 12px;">
+              <h2 style="font-size: 13px; font-weight: bold; color: #1e293b; margin: 0;">۱. جدول ردیاب وظایف و اهداف استراتژیک</h2>
+              <p style="font-size: 9px; color: #64748b; margin: 2px 0 0 0;">بازه زمانی: از ${toPersianDigits(formatJalaliShort(tasksStartDate))} تا ${toPersianDigits(formatJalaliShort(tasksEndDate))}</p>
+            </div>
+            <table style="width: 100%; text-align: right; border-collapse: collapse; font-size: 10px;">
+              <thead>
+                <tr style="background-color: #0f766e; color: #ffffff; font-weight: bold;">
+                  <th style="padding: 8px; border-radius: 0 6px 6px 0;">عنوان تسک</th>
+                  <th style="padding: 8px;">دسته‌بندی</th>
+                  <th style="padding: 8px;">توضیحات خلاصه‌شده</th>
+                  <th style="padding: 8px;">مهلت انجام</th>
+                  <th style="padding: 8px; text-align: center; border-radius: 6px 0 0 6px;">وضعیت</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${filteredTasks.length === 0 ? `
+                <tr>
+                  <td colspan="5" style="padding: 12px; text-align: center; color: #94a3b8; background-color: #f8fafc; border-radius: 6px;">هیچ وظیفه‌ای ثبت نشده است.</td>
+                </tr>
+                ` : filteredTasks.map(t => {
+                  const deadlineText = `${t.deadlineDate ? formatJalaliShort(t.deadlineDate) : '-'} ${t.deadlineTime || ''}`;
+                  const statusText = t.status === 'completed' ? 'انجام شده' : t.status === 'pending' ? 'در حال انجام' : 'معوقه';
+                  const statusBg = t.status === 'completed' ? '#f0fdf4' : t.status === 'pending' ? '#fffbeb' : '#fef2f2';
+                  const statusColor = t.status === 'completed' ? '#16a34a' : t.status === 'pending' ? '#d97706' : '#dc2626';
+                  return `
+                  <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="padding: 8px; font-weight: bold; color: #1e293b;">${t.title || '-'}</td>
+                    <td style="padding: 8px; color: #475569;">${t.category || '-'}</td>
+                    <td style="padding: 8px; color: #64748b; font-size: 9px; max-width: 220px;">${t.summary || t.detailedDescription || '-'}</td>
+                    <td style="padding: 8px; color: #475569;">${toPersianDigits(deadlineText)}</td>
+                    <td style="padding: 8px; text-align: center;">
+                      <span style="padding: 2px 8px; border-radius: 12px; font-size: 9px; font-weight: bold; background-color: ${statusBg}; color: ${statusColor};">${statusText}</span>
+                    </td>
+                  </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+          ` : ''}
+
+          <!-- Section 2: Habits -->
+          ${includeHabits ? `
+          <div style="margin-bottom: 24px;">
+            <div style="border-right: 4px solid #4f46e5; padding-right: 8px; margin-bottom: 12px;">
+              <h2 style="font-size: 13px; font-weight: bold; color: #1e293b; margin: 0;">۲. جدول پایش عادات روزانه (Habit Tracker)</h2>
+              <p style="font-size: 9px; color: #64748b; margin: 2px 0 0 0;">بازه زمانی: از ${toPersianDigits(formatJalaliShort(habitsStartDate))} تا ${toPersianDigits(formatJalaliShort(habitsEndDate))}</p>
+            </div>
+            <table style="width: 100%; text-align: right; border-collapse: collapse; font-size: 10px;">
+              <thead>
+                <tr style="background-color: #4f46e5; color: #ffffff; font-weight: bold;">
+                  <th style="padding: 8px; border-radius: 0 6px 6px 0;">عنوان عادت</th>
+                  <th style="padding: 8px; text-align: center;">روزهای متوالی (Streak)</th>
+                  <th style="padding: 8px; text-align: center; border-radius: 6px 0 0 6px;">تحقق در بازه انتخابی</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${filteredHabitsForExport.length === 0 ? `
+                <tr>
+                  <td colspan="3" style="padding: 12px; text-align: center; color: #94a3b8; background-color: #f8fafc; border-radius: 6px;">هیچ عادتی ثبت نشده است.</td>
+                </tr>
+                ` : filteredHabitsForExport.map(h => {
+                  const streakCount = getHabitStreak(h);
+                  const completedCount = getHabitCompletedCountInRange(h, habitsStartDate, habitsEndDate);
+                  return `
+                  <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="padding: 8px; font-weight: bold; color: #1e293b;">${h.title || '-'}</td>
+                    <td style="padding: 8px; text-align: center; color: #d97706; font-weight: bold;">🔥 ${toPersianDigits(streakCount)} روز</td>
+                    <td style="padding: 8px; text-align: center; color: #334155; font-weight: 500;">ثبت شده: ${toPersianDigits(completedCount)} روز</td>
+                  </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+          ` : ''}
+
+          <!-- Section 3: Daily Tasks -->
+          ${includeDaily ? `
+          <div style="margin-bottom: 24px;">
+            <div style="border-right: 4px solid #10b981; padding-right: 8px; margin-bottom: 12px;">
+              <h2 style="font-size: 13px; font-weight: bold; color: #1e293b; margin: 0;">۳. جدول کارهای روزانه و زمان‌بندی</h2>
+              <p style="font-size: 9px; color: #64748b; margin: 2px 0 0 0;">بازه زمانی: از ${toPersianDigits(formatJalaliShort(dailyStartDate))} تا ${toPersianDigits(formatJalaliShort(dailyEndDate))}</p>
+            </div>
+            <table style="width: 100%; text-align: right; border-collapse: collapse; font-size: 10px;">
+              <thead>
+                <tr style="background-color: #10b981; color: #ffffff; font-weight: bold;">
+                  <th style="padding: 8px; border-radius: 0 6px 6px 0;">تاریخ</th>
+                  <th style="padding: 8px;">عنوان کار</th>
+                  <th style="padding: 8px;">بازه زمانی</th>
+                  <th style="padding: 8px;">توضیحات</th>
+                  <th style="padding: 8px; text-align: center; border-radius: 6px 0 0 6px;">وضعیت</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${filteredDaily.length === 0 ? `
+                <tr>
+                  <td colspan="5" style="padding: 12px; text-align: center; color: #94a3b8; background-color: #f8fafc; border-radius: 6px;">هیچ برنامه‌ای ثبت نشده است.</td>
+                </tr>
+                ` : filteredDaily.map(dt => {
+                  const statusText = dt.isCompleted ? 'تکمیل شده' : 'در حال انجام';
+                  const statusBg = dt.isCompleted ? '#e6f4ea' : '#fffbeb';
+                  const statusColor = dt.isCompleted ? '#137333' : '#d97706';
+                  return `
+                  <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="padding: 8px; color: #475569; font-weight: 500;">${toPersianDigits(dt.dateStr ? formatJalaliShort(dt.dateStr) : '-')}</td>
+                    <td style="padding: 8px; font-weight: bold; color: #1e293b;">${dt.title || '-'}</td>
+                    <td style="padding: 8px; color: #475569;">${toPersianDigits(dt.timeWindow || '-')}</td>
+                    <td style="padding: 8px; color: #64748b; font-size: 9px; max-width: 200px;">${dt.summary || dt.detailedDescription || '-'}</td>
+                    <td style="padding: 8px; text-align: center;">
+                      <span style="padding: 2px 8px; border-radius: 12px; font-size: 9px; font-weight: bold; background-color: ${statusBg}; color: ${statusColor};">${statusText}</span>
+                    </td>
+                  </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+          ` : ''}
+
+          <!-- Section 4: Finances -->
+          ${includeFinances ? `
+          <div style="margin-bottom: 24px;">
+            <div style="border-right: 4px solid #f59e0b; padding-right: 8px; margin-bottom: 12px;">
+              <h2 style="font-size: 13px; font-weight: bold; color: #1e293b; margin: 0;">۴. جدول تراکنش‌های مالی و مدیریت بودجه</h2>
+              <p style="font-size: 9px; color: #64748b; margin: 2px 0 0 0;">بازه زمانی: از ${toPersianDigits(formatJalaliShort(financesStartDate))} تا ${toPersianDigits(formatJalaliShort(financesEndDate))}</p>
+            </div>
+            <table style="width: 100%; text-align: right; border-collapse: collapse; font-size: 10px;">
+              <thead>
+                <tr style="background-color: #f59e0b; color: #ffffff; font-weight: bold;">
+                  <th style="padding: 8px; border-radius: 0 6px 6px 0;">عنوان تراکنش</th>
+                  <th style="padding: 8px; text-align: center;">نوع تراکنش</th>
+                  <th style="padding: 8px; text-align: center;">مبلغ (تومان)</th>
+                  <th style="padding: 8px; text-align: center;">تاریخ ثبت</th>
+                  <th style="padding: 8px; text-align: center; border-radius: 6px 0 0 6px;">روز هفته</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${filteredFin.length === 0 ? `
+                <tr>
+                  <td colspan="5" style="padding: 12px; text-align: center; color: #94a3b8; background-color: #f8fafc; border-radius: 6px;">هیچ تراکنشی ثبت نشده است.</td>
+                </tr>
+                ` : filteredFin.map(f => {
+                  const typeText = f.type === 'income' ? 'درآمد (+)' : 'هزینه (-)';
+                  const typeBg = f.type === 'income' ? '#e6f4ea' : '#fef2f2';
+                  const typeColor = f.type === 'income' ? '#137333' : '#dc2626';
+                  const amountText = toPersianDigits(f.amount.toLocaleString());
+                  return `
+                  <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="padding: 8px; font-weight: bold; color: #1e293b;">${f.title || '-'}</td>
+                    <td style="padding: 8px; text-align: center;">
+                      <span style="padding: 2px 8px; border-radius: 12px; font-size: 9px; font-weight: bold; background-color: ${typeBg}; color: ${typeColor};">${typeText}</span>
+                    </td>
+                    <td style="padding: 8px; text-align: center; font-weight: bold; color: ${f.type === 'income' ? '#16a34a' : '#dc2626'}">${amountText}</td>
+                    <td style="padding: 8px; text-align: center; color: #475569;">${toPersianDigits(f.dateISO ? formatJalaliShort(f.dateISO) : '-')}</td>
+                    <td style="padding: 8px; text-align: center; color: #475569;">${f.dayOfWeekName || '-'}</td>
+                  </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+          ` : ''}
+
+          <!-- Footer -->
+          <div style="border-top: 1px solid #e2e8f0; padding-top: 16px; margin-top: 40px; text-align: center; font-size: 9px; color: #94a3b8;">
+            این گزارش به صورت اختصاصی توسط سیستم پلنر هوشمند (Smart Planner) طراحی و صادر گردیده است.
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(container);
+
+      // Give a tiny timeout for Vazirmatn font rendering engine to settle
+      await new Promise(resolve => setTimeout(resolve, 250));
+
+      const containerWidth = 800;
+      const containerHeight = container.scrollHeight;
+
+      const imgData = await toJpeg(container, {
+        pixelRatio: 2.2,
+        backgroundColor: '#ffffff',
+        width: containerWidth,
+        height: containerHeight,
+        style: { left: '0', top: '0', position: 'relative' },
+        fontEmbedCSS: '',
+      });
+
+      document.body.removeChild(container);
+
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'px',
+        format: 'a4',
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
+      const imgWidth = pdfWidth;
+      const imgHeight = (containerHeight * pdfWidth) / containerWidth;
+
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pdfHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight; // slide up
+        pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pdfHeight;
+      }
+
+      pdf.save(`Smart_Planner_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
+      onClose();
+    } catch (err) {
+      console.error('PDF generation error:', err);
+      alert('خطا در تولید فایل پی‌دی‌اف.');
+    } finally {
+      setIsGeneratingPdf(false);
     }
   };
 
@@ -912,8 +1245,8 @@ export const WordExportModal: React.FC<WordExportModalProps> = ({
                 <FileText className="w-6 h-6 text-teal-200" />
               </div>
               <div>
-                <h3 className="font-bold text-base">ساخت فایل خروجی Word (.docx)</h3>
-                <p className="text-xs text-teal-100">تعیین بازه زمانی مجزا برای هر بخش از برنامه</p>
+                <h3 className="font-bold text-base">خروجی گزارش پیشرفته (Word / PDF)</h3>
+                <p className="text-xs text-teal-100">دریافت گزارش جامع عملکرد با فیلترها و قالب‌بندی‌های اختصاصی</p>
               </div>
             </div>
             <button
@@ -1075,24 +1408,47 @@ export const WordExportModal: React.FC<WordExportModalProps> = ({
                 انصراف
               </button>
 
-              <button
-                type="button"
-                onClick={generateWordDoc}
-                disabled={isGenerating}
-                className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white text-xs font-bold rounded-2xl shadow-lg shadow-teal-600/30 transition-all disabled:opacity-50"
-              >
-                {isGenerating ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>در حال ساخت فایل ورد...</span>
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-4 h-4" />
-                    <span>ساخت و دانلود فایل Word</span>
-                  </>
-                )}
-              </button>
+              <div className="flex items-center gap-2">
+                {/* Word Export Button */}
+                <button
+                  type="button"
+                  onClick={generateWordDoc}
+                  disabled={isGenerating || isGeneratingPdf}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white text-xs font-bold rounded-2xl shadow-lg shadow-teal-600/20 transition-all disabled:opacity-50"
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>در حال ساخت PDF...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" />
+                      <span>دانلود Word</span>
+                    </>
+                  )}
+                </button>
+
+                {/* PDF Export Button */}
+                <button
+                  type="button"
+                  onClick={generatePdfDoc}
+                  disabled={isGenerating || isGeneratingPdf}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white text-xs font-bold rounded-2xl shadow-lg shadow-rose-600/20 transition-all disabled:opacity-50"
+                >
+                  {isGeneratingPdf ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>در حال ساخت PDF...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" />
+                      <span>دانلود PDF جذاب</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
