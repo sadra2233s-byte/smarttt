@@ -726,6 +726,15 @@ export const DailySchedulePage: React.FC<DailySchedulePageProps> = ({
                     <div className="flex items-center gap-1">
                       <button
                         type="button"
+                        onClick={() => setMobileModalTask(t)}
+                        className="p-1.5 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl transition-colors border border-emerald-200"
+                        title="مشاهده خلاصه و توضیحات کامل"
+                      >
+                        <FileText className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        type="button"
                         onClick={() => setReminderModalTask(t)}
                         className={`p-1.5 rounded-xl border transition-all ${
                           t.reminderSet && t.reminders && t.reminders.length > 0
