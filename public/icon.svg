@@ -1,41 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <linearGradient id="emeraldDark" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#065f46" />
-      <stop offset="100%" stop-color="#047857" />
-    </linearGradient>
-    <linearGradient id="emeraldMid" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#059669" />
-      <stop offset="100%" stop-color="#10b981" />
-    </linearGradient>
-    <linearGradient id="emeraldLight" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#10b981" />
-      <stop offset="100%" stop-color="#34d399" />
-    </linearGradient>
-    <linearGradient id="emeraldDeep" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#064e3b" />
-      <stop offset="100%" stop-color="#065f46" />
-    </linearGradient>
-    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="0" dy="12" stdDeviation="12" flood-color="#000000" flood-opacity="0.25" />
+    <filter id="cardShadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#000000" flood-opacity="0.18" />
     </filter>
   </defs>
 
-  <!-- App Icon Base Background Container with subtle gradient -->
-  <rect width="512" height="512" rx="118" fill="#f0fdf4" />
+  <!-- White PWA Install Icon Squircle Background -->
+  <rect width="512" height="512" rx="116" fill="#ffffff" />
 
-  <!-- Geometric 'F' Logo composed of stacked rounded bars with shadows -->
-  <g filter="url(#shadow)" transform="translate(80, 80) scale(0.68)">
-    {/* Left vertical tall bar */}
-    <rect x="0" y="0" width="120" height="360" rx="36" fill="url(#emeraldDeep)" />
-    
-    {/* Left bottom protruding bar segment */}
-    <rect x="0" y="240" width="120" height="120" rx="36" fill="url(#emeraldDark)" />
+  <!-- Exact match of user reference icon -->
+  <g filter="url(#cardShadow)" transform="translate(80, 80) scale(0.68)">
+    <!-- Left Column (Top & Bottom segments) -->
+    <rect x="0" y="0" width="120" height="360" rx="36" fill="#047857" />
+    <rect x="0" y="240" width="120" height="120" rx="36" fill="#065f46" />
 
-    {/* Middle horizontal/vertical block */}
-    <rect x="144" y="0" width="120" height="240" rx="36" fill="url(#emeraldMid)" />
+    <!-- Middle Column -->
+    <rect x="144" y="0" width="120" height="240" rx="36" fill="#10b981" />
 
-    {/* Top right floating block */}
-    <rect x="288" y="0" width="120" height="200" rx="36" fill="url(#emeraldLight)" />
+    <!-- Right Column -->
+    <rect x="288" y="0" width="120" height="200" rx="36" fill="#34d399" />
   </g>
 </svg>
