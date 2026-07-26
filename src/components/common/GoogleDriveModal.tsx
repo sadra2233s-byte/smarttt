@@ -15,6 +15,7 @@ import {
   HelpCircle,
   Chrome,
   Check,
+  Copy,
 } from 'lucide-react';
 import {
   getStoredClientId,
@@ -48,8 +49,15 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({
   const [showSettings, setShowSettings] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isSyncing, setIsSyncing] = useState<'save' | 'load' | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
+
+  const handleCopyOrigin = () => {
+    navigator.clipboard.writeText(window.location.origin);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -79,9 +87,14 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({
         text: `اتصال با موفقیت برقرار شد! خوش آمدید: ${result.email}. هم‌اکنون می‌توانید از همگام‌سازی ابری استفاده کنید.`,
       });
     } catch (err: any) {
+      // Intuitively check if it failed due to origin mismatch or generic error
+      let errorMessage = err.message || 'خطا در برقراری اتصال با گوگل.';
+      if (errorMessage.includes('origin_mismatch') || errorMessage.includes('400') || errorMessage.includes('policy')) {
+        errorMessage = `خطای ۴۰۰ (عدم همخوانی منشا - origin_mismatch) از طرف گوگل رخ داد. کلاینت آی‌دی شما صحیح است، اما آدرس این سایت در تنظیمات آن در گوگل کلود مجاز نشده است. لطفاً بخش تنظیمات کلاینت آی‌دی (آیکون چرخ‌دنده ⚙️) را باز کرده و راهنما را بخوانید.`;
+      }
       setStatusMsg({
         type: 'error',
-        text: err.message || 'خطا در برقراری اتصال با گوگل.',
+        text: errorMessage,
       });
     } finally {
       setIsConnecting(false);
@@ -302,11 +315,14 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({
 
             {/* Custom Client ID Settings Box (Collapsible) */}
             {showSettings && (
-              <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-2 text-[10px]">
-                <p className="font-bold text-slate-700">تنظیم کلاینت آی‌دی (مخصوص دامنه‌های شخصی):</p>
-                <p className="text-slate-500 leading-relaxed">
-                  اگر از دامنه‌ای غیر از پیش‌نمایش یا لوکال‌هاست استفاده می‌کنید، باید کلاینت آی‌دی گوگل خود را اینجا تنظیم کنید تا خطای منشا (Origin) رخ ندهد.
-                </p>
+              <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-3 text-[10px] text-right">
+                <div className="space-y-1">
+                  <p className="font-bold text-slate-800 text-[11px]">تنظیم کلاینت آی‌دی (Client ID اختصاصی):</p>
+                  <p className="text-slate-500 leading-relaxed text-[10px]">
+                    اگر از دامنه‌ای اختصاصی مانند <span className="font-mono text-teal-700 font-bold">ssmartplannner.pages.dev</span> استفاده می‌کنید، برای جلوگیری از بروز خطای <span className="font-mono font-bold text-rose-600">origin_mismatch</span> حتماً باید کلاینت آی‌دی خودتان را ثبت و دامنه را در گوگل کلود مجاز کنید.
+                  </p>
+                </div>
+
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -323,13 +339,45 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({
                     ذخیره
                   </button>
                 </div>
-                <div className="p-2 bg-slate-50 border border-slate-100 rounded-lg space-y-1 text-slate-500">
-                  <p className="font-bold text-slate-600">نحوه ساخت کلاینت آی‌دی در ۲ دقیقه:</p>
-                  <ol className="list-decimal list-inside space-y-0.5 leading-relaxed">
-                    <li>وارد Google Cloud Console شوید.</li>
-                    <li>یک پروژه جدید بسازید و OAuth Consent Screen را فعال کنید.</li>
-                    <li>در بخش Credentials یک Client ID از نوع Web Application بسازید.</li>
-                    <li>آدرس سایت خود را در بخش Authorized JavaScript origins وارد کنید.</li>
+
+                {/* CRITICAL: Origin Copy Section */}
+                <div className="p-2.5 bg-rose-50/50 border border-rose-100 rounded-xl space-y-1.5">
+                  <p className="font-bold text-rose-900 text-[10px]">مرحله بسیار مهم: افزودن مبدا مجاز در گوگل کنسول</p>
+                  <p className="text-slate-600 leading-relaxed text-[9px]">
+                    گوگل به دلایل امنیتی فقط درخواست‌هایی را می‌پذیرد که آدرس دامنه آن‌ها دقیقاً در کلاینت آی‌دی شما ثبت شده باشد. لطفاً آدرس زیر را کپی کرده و در تنظیمات کلاینت آی‌دی خود در کنسول گوگل در بخش <span className="font-bold text-teal-800">Authorized JavaScript origins</span> قرار دهید:
+                  </p>
+                  <div className="flex items-center gap-1.5 bg-white p-2 border border-slate-150 rounded-lg">
+                    <span className="flex-1 font-mono text-[10px] text-slate-700 text-left select-all overflow-x-auto whitespace-nowrap">
+                      {window.location.origin}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleCopyOrigin}
+                      className="px-2.5 py-1 bg-slate-100 hover:bg-teal-50 hover:text-teal-700 text-slate-600 rounded-md font-bold transition-all flex items-center gap-1 text-[9px]"
+                    >
+                      {copied ? (
+                        <>
+                          <Check className="w-3 h-3 text-emerald-600" />
+                          <span>کپی شد!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3 h-3" />
+                          <span>کپی آدرس</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-2.5 bg-slate-50 border border-slate-150 rounded-xl space-y-1 text-slate-500">
+                  <p className="font-bold text-slate-700">چگونه خطا را در کنسول گوگل برطرف کنیم؟</p>
+                  <ol className="list-decimal list-inside space-y-1 leading-relaxed text-[9px]">
+                    <li>به <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" className="text-teal-600 underline font-bold">کنسول گوگل کلود</a> بروید و پروژه خود را انتخاب کنید.</li>
+                    <li>از منوی کناری به بخش <span className="font-bold">APIs & Services</span> و سپس <span className="font-bold">Credentials</span> بروید.</li>
+                    <li>روی کلاینت آی‌دی خود (<span className="font-mono">{clientId ? (clientId.slice(0, 15) + '...') : 'Web Client'}</span>) کلیک کنید تا وارد تنظیمات آن شوید.</li>
+                    <li>در بخش <span className="font-bold text-teal-800">Authorized JavaScript origins</span> دکمه <span className="font-bold">ADD URI</span> را بزنید و آدرس کپی شده بالا را جایگذاری کنید.</li>
+                    <li>دکمه <span className="font-bold bg-slate-200 px-1 py-0.5 rounded text-slate-700">Save</span> پایین صفحه را بزنید (ممکن است اعمال تغییرات توسط گوگل چند دقیقه طول بکشد).</li>
                   </ol>
                 </div>
               </div>

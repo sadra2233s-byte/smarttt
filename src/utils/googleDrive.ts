@@ -34,7 +34,7 @@ export function setActiveGoogleEmail(email: string | null) {
 }
 
 export function getStoredClientId(): string {
-  return localStorage.getItem('google_drive_client_id') || oauthConfig.oAuthClientId || '';
+  return localStorage.getItem('google_drive_client_id') || '391522338784-642sdg0ssfnd6luc8f7lea6oihs1hhq7.apps.googleusercontent.com';
 }
 
 export function setStoredClientId(clientId: string) {
