@@ -97,16 +97,6 @@ export const TasksGoalsPage: React.FC<TasksGoalsPageProps> = ({
       reminderSet: tempTaskReminder,
     });
 
-    if (tempTaskReminder && 'Notification' in window) {
-      Notification.requestPermission().then((perm) => {
-        if (perm === 'granted') {
-          new Notification('یادآور تسک تنظیم شد', {
-            body: `یادآور برای "${taskForDateTime.title}" ثبت شد.`,
-          });
-        }
-      });
-    }
-
     setTaskForDateTime(null);
   };
 
@@ -188,16 +178,6 @@ export const TasksGoalsPage: React.FC<TasksGoalsPageProps> = ({
   const handleToggleReminder = (t: TaskGoal) => {
     const nextState = !t.reminderSet;
     onUpdateTask({ ...t, reminderSet: nextState });
-
-    if (nextState && 'Notification' in window) {
-      Notification.requestPermission().then((perm) => {
-        if (perm === 'granted') {
-          new Notification('یادآور تسک ثبت شد', {
-            body: `یادآور برای "${t.title}" فعال گردید.`,
-          });
-        }
-      });
-    }
   };
 
   const handleMoveToArchive = (t: TaskGoal) => {
@@ -1238,6 +1218,7 @@ export const TasksGoalsPage: React.FC<TasksGoalsPageProps> = ({
           title={reminderModalTask.title}
           reminderSet={reminderModalTask.reminderSet}
           reminders={reminderModalTask.reminders || []}
+          description={reminderModalTask.detailedDescription || reminderModalTask.summary}
           colorScheme="teal"
           onSave={(enabled, list) => {
             onUpdateTask({

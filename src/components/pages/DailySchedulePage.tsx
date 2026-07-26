@@ -993,6 +993,7 @@ export const DailySchedulePage: React.FC<DailySchedulePageProps> = ({
           title={reminderModalTask.title}
           reminderSet={Boolean(reminderModalTask.reminderSet)}
           reminders={reminderModalTask.reminders || []}
+          description={reminderModalTask.detailedDescription || reminderModalTask.summary}
           colorScheme="emerald"
           onSave={(enabled, list) => {
             onUpdateDailyTask({
