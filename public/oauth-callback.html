@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>احراز هویت گوگل | Smart Planner</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      background: #f8fafc;
+      color: #1e293b;
+      text-align: center;
+    }
+    .spinner {
+      border: 4px solid #e2e8f0;
+      border-top: 4px solid #0f766e;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 16px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    h3 {
+      margin: 8px 0;
+      color: #0f766e;
+    }
+    p {
+      color: #64748b;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="spinner"></div>
+  <h3>در حال اتصال به حساب گوگل...</h3>
+  <p>این پنجره به زودی به طور خودکار بسته خواهد شد.</p>
+
+  <script>
+    // Extract parameters from fragment
+    const hash = window.location.hash.substring(1);
+    const params = new URLSearchParams(hash);
+    const accessToken = params.get('access_token');
+    
+    if (accessToken) {
+      // Fetch user email from google userInfo endpoint directly
+      fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { 'Authorization': 'Bearer ' + accessToken }
+      })
+      .then(res => res.json())
+      .then(user => {
+        if (window.opener) {
+          window.opener.postMessage({
+            type: 'GOOGLE_OAUTH_SUCCESS',
+            accessToken: accessToken,
+            email: user.email || 'حساب گوگل'
+          }, window.location.origin);
+          window.close();
+        }
+      })
+      .catch(err => {
+        console.error('Error fetching user info:', err);
+        if (window.opener) {
+          window.opener.postMessage({
+            type: 'GOOGLE_OAUTH_SUCCESS',
+            accessToken: accessToken,
+            email: 'حساب گوگل'
+          }, window.location.origin);
+          window.close();
+        }
+      });
+    } else {
+      const error = params.get('error') || 'unknown';
+      if (window.opener) {
+        window.opener.postMessage({
+          type: 'GOOGLE_OAUTH_FAILURE',
+          error: error
+        }, window.location.origin);
+        window.close();
+      }
+    }
+  </script>
+</body>
+</html>

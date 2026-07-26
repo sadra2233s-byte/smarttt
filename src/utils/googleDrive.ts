@@ -1,16 +1,10 @@
 import { AppState } from '../types';
-import firebaseConfig from '../../firebase-applet-config.json';
-import { initializeApp, getApp, getApps } from 'firebase/app';
-import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
 
-// Initialize Firebase App
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-const auth = getAuth(app);
-
+// Default Client ID for the Google OAuth Client
 const DEFAULT_CLIENT_ID = 
   ((import.meta as any).env?.VITE_GOOGLE_CLIENT_ID as string) || 
-  firebaseConfig.oAuthClientId || 
   '220867813659-u1klh3q50rkvui3cafhvfoglng44u136.apps.googleusercontent.com';
+
 const DRIVE_FILE_NAME = 'smart_planner_backup.json';
 
 export function getStoredClientId(): string {
@@ -52,34 +46,75 @@ export function setActiveGoogleEmail(email: string | null) {
 export function logoutGoogleDrive() {
   localStorage.removeItem('google_drive_access_token');
   localStorage.removeItem('google_drive_email');
-  signOut(auth).catch((e) => console.error('خطا در خروج از فایربیس:', e));
 }
 
-// Authenticate using Firebase Auth Google Auth Provider
-export async function requestGisToken(_clientId: string): Promise<{ email: string; token: string }> {
-  const provider = new GoogleAuthProvider();
-  // Add required scopes
-  provider.addScope('https://www.googleapis.com/auth/drive.file');
-  provider.addScope('https://www.googleapis.com/auth/userinfo.email');
-  provider.addScope('https://www.googleapis.com/auth/userinfo.profile');
-  
-  provider.setCustomParameters({
-    prompt: 'select_account'
-  });
+// Authenticate using standard client-side Google OAuth 2.0 Implicit Flow with a popup
+export async function requestGisToken(clientId: string): Promise<{ email: string; token: string }> {
+  return new Promise((resolve, reject) => {
+    // Construct authorized redirect URI (points to static callback page)
+    const redirectUri = `${window.location.origin}/oauth-callback.html`;
+    const scopes = [
+      'https://www.googleapis.com/auth/drive.file',
+      'https://www.googleapis.com/auth/userinfo.email',
+      'https://www.googleapis.com/auth/userinfo.profile'
+    ].join(' ');
 
-  try {
-    const result = await signInWithPopup(auth, provider);
-    const credential = GoogleAuthProvider.credentialFromResult(result);
-    if (!credential?.accessToken) {
-      throw new Error('توکن دسترسی دریافت نشد.');
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + 
+      `client_id=${encodeURIComponent(clientId)}` +
+      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+      `&response_type=token` +
+      `&scope=${encodeURIComponent(scopes)}` +
+      `&prompt=consent` +
+      `&select_account=true`;
+
+    const width = 540;
+    const height = 650;
+    const left = window.screen.width / 2 - width / 2;
+    const top = window.screen.height / 2 - height / 2;
+
+    const popup = window.open(
+      authUrl,
+      'google_oauth_popup',
+      `width=${width},height=${height},top=${top},left=${left},scrollbars=yes`
+    );
+
+    if (!popup) {
+      reject(new Error('پنجره بازشو توسط مرورگر مسدود شد. لطفا اجازه باز شدن پاپ‌آپ (Pop-ups) را در مرورگر خود بدهید.'));
+      return;
     }
-    const token = credential.accessToken;
-    const email = result.user.email || 'حساب گوگل';
-    return { email, token };
-  } catch (error: any) {
-    console.error('خطای احراز هویت با گوگل:', error);
-    throw new Error(error.message || 'خطا در برقراری اتصال با گوگل.');
-  }
+
+    const messageListener = (event: MessageEvent) => {
+      // Validate origin to ensure security
+      if (event.origin !== window.location.origin) {
+        return;
+      }
+
+      if (event.data?.type === 'GOOGLE_OAUTH_SUCCESS') {
+        cleanup();
+        resolve({
+          token: event.data.accessToken,
+          email: event.data.email
+        });
+      } else if (event.data?.type === 'GOOGLE_OAUTH_FAILURE') {
+        cleanup();
+        reject(new Error(event.data.error || 'اتصال ناموفق بود. خطایی رخ داد.'));
+      }
+    };
+
+    const checkClosedInterval = setInterval(() => {
+      if (popup.closed) {
+        cleanup();
+        reject(new Error('اتصال متوقف شد. پنجره ورود توسط شما یا مرورگر بسته شد.'));
+      }
+    }, 1000);
+
+    const cleanup = () => {
+      window.removeEventListener('message', messageListener);
+      clearInterval(checkClosedInterval);
+    };
+
+    window.addEventListener('message', messageListener);
+  });
 }
 
 // Find existing backup file ID
