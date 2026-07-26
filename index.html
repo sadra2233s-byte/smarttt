@@ -14,6 +14,13 @@
   </head>
   <body class="bg-slate-50 text-slate-800 antialiased font-['Vazirmatn',sans-serif] selection:bg-teal-500 selection:text-white min-h-screen">
     <div id="root"></div>
+    <script>
+      window.deferredPrompt = null;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        window.deferredPrompt = e;
+      });
+    </script>
     <script type="module" src="/src/main.tsx"></script>
     <script>
       if ('serviceWorker' in navigator) {
