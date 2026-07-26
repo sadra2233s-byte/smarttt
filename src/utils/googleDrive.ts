@@ -1,14 +1,40 @@
+import oauthConfig from '../../firebase-applet-config.json';
 import { AppState } from '../types';
-
-// Default Client ID for the Google OAuth Client
-const DEFAULT_CLIENT_ID = 
-  ((import.meta as any).env?.VITE_GOOGLE_CLIENT_ID as string) || 
-  '220867813659-u1klh3q50rkvui3cafhvfoglng44u136.apps.googleusercontent.com';
 
 const DRIVE_FILE_NAME = 'smart_planner_backup.json';
 
+// In-memory token cache with fallback to sessionStorage for persistent session
+let cachedAccessToken: string | null = null;
+let cachedEmail: string | null = null;
+
+export function getGoogleAccessToken(): string | null {
+  return cachedAccessToken || sessionStorage.getItem('google_drive_access_token');
+}
+
+export function setGoogleAccessToken(token: string | null) {
+  cachedAccessToken = token;
+  if (token) {
+    sessionStorage.setItem('google_drive_access_token', token);
+  } else {
+    sessionStorage.removeItem('google_drive_access_token');
+  }
+}
+
+export function getActiveGoogleEmail(): string | null {
+  return cachedEmail || sessionStorage.getItem('google_drive_email');
+}
+
+export function setActiveGoogleEmail(email: string | null) {
+  cachedEmail = email;
+  if (email) {
+    sessionStorage.setItem('google_drive_email', email);
+  } else {
+    sessionStorage.removeItem('google_drive_email');
+  }
+}
+
 export function getStoredClientId(): string {
-  return localStorage.getItem('google_drive_client_id') || DEFAULT_CLIENT_ID;
+  return localStorage.getItem('google_drive_client_id') || oauthConfig.oAuthClientId || '';
 }
 
 export function setStoredClientId(clientId: string) {
@@ -19,105 +45,100 @@ export function setStoredClientId(clientId: string) {
   }
 }
 
-export function getGoogleAccessToken(): string | null {
-  return localStorage.getItem('google_drive_access_token');
-}
-
-export function setGoogleAccessToken(token: string) {
-  if (token) {
-    localStorage.setItem('google_drive_access_token', token);
-  } else {
-    localStorage.removeItem('google_drive_access_token');
-  }
-}
-
-export function getActiveGoogleEmail(): string | null {
-  return localStorage.getItem('google_drive_email');
-}
-
-export function setActiveGoogleEmail(email: string | null) {
-  if (email) {
-    localStorage.setItem('google_drive_email', email);
-  } else {
-    localStorage.removeItem('google_drive_email');
-  }
-}
-
 export function logoutGoogleDrive() {
-  localStorage.removeItem('google_drive_access_token');
-  localStorage.removeItem('google_drive_email');
+  setGoogleAccessToken(null);
+  setActiveGoogleEmail(null);
 }
 
-// Authenticate using standard client-side Google OAuth 2.0 Implicit Flow with a popup
-export async function requestGisToken(clientId: string): Promise<{ email: string; token: string }> {
+// Dynamically load Google Identity Services script
+function loadGisScript(): Promise<void> {
   return new Promise((resolve, reject) => {
-    // Construct authorized redirect URI (points to static callback page)
-    const redirectUri = `${window.location.origin}/oauth-callback.html`;
-    const scopes = [
-      'https://www.googleapis.com/auth/drive.file',
-      'https://www.googleapis.com/auth/userinfo.email',
-      'https://www.googleapis.com/auth/userinfo.profile'
-    ].join(' ');
-
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + 
-      `client_id=${encodeURIComponent(clientId)}` +
-      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-      `&response_type=token` +
-      `&scope=${encodeURIComponent(scopes)}` +
-      `&prompt=consent` +
-      `&select_account=true`;
-
-    const width = 540;
-    const height = 650;
-    const left = window.screen.width / 2 - width / 2;
-    const top = window.screen.height / 2 - height / 2;
-
-    const popup = window.open(
-      authUrl,
-      'google_oauth_popup',
-      `width=${width},height=${height},top=${top},left=${left},scrollbars=yes`
-    );
-
-    if (!popup) {
-      reject(new Error('پنجره بازشو توسط مرورگر مسدود شد. لطفا اجازه باز شدن پاپ‌آپ (Pop-ups) را در مرورگر خود بدهید.'));
+    if ((window as any).google?.accounts?.oauth2) {
+      resolve();
+      return;
+    }
+    
+    // Check if script is already added to document
+    const existingScript = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
+    if (existingScript) {
+      existingScript.addEventListener('load', () => resolve());
+      existingScript.addEventListener('error', (e) => reject(e));
       return;
     }
 
-    const messageListener = (event: MessageEvent) => {
-      // Validate origin to ensure security
-      if (event.origin !== window.location.origin) {
-        return;
-      }
-
-      if (event.data?.type === 'GOOGLE_OAUTH_SUCCESS') {
-        cleanup();
-        resolve({
-          token: event.data.accessToken,
-          email: event.data.email
-        });
-      } else if (event.data?.type === 'GOOGLE_OAUTH_FAILURE') {
-        cleanup();
-        reject(new Error(event.data.error || 'اتصال ناموفق بود. خطایی رخ داد.'));
-      }
-    };
-
-    const checkClosedInterval = setInterval(() => {
-      if (popup.closed) {
-        cleanup();
-        reject(new Error('اتصال متوقف شد. پنجره ورود توسط شما یا مرورگر بسته شد.'));
-      }
-    }, 1000);
-
-    const cleanup = () => {
-      window.removeEventListener('message', messageListener);
-      clearInterval(checkClosedInterval);
-    };
-
-    window.addEventListener('message', messageListener);
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = () => resolve();
+    script.onerror = (e) => reject(e);
+    document.head.appendChild(script);
   });
 }
 
-// Find existing backup file ID
+// Authenticate directly using Google Identity Services (GIS) Token Client Flow (Implicit Flow)
+// This uses a popup window communicating directly with Google, avoiding any middleman and redirect_uri mismatch issues!
+export async function requestGisToken(clientId: string): Promise<{ email: string; token: string }> {
+  await loadGisScript();
+
+  return new Promise((resolve, reject) => {
+    try {
+      if (!(window as any).google?.accounts?.oauth2) {
+        throw new Error('کتابخانه ورود گوگل بارگذاری نشد. لطفاً چند لحظه بعد مجدداً تلاش کنید.');
+      }
+
+      const client = (window as any).google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
+        callback: async (response: any) => {
+          if (response.error) {
+            reject(new Error(response.error_description || response.error || 'خطا در احراز هویت با گوگل.'));
+            return;
+          }
+          if (!response.access_token) {
+            reject(new Error('توکن دسترسی معتبر از گوگل دریافت نشد.'));
+            return;
+          }
+
+          const token = response.access_token;
+          
+          try {
+            // Get user email directly from Google UserInfo API
+            const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            if (!userInfoRes.ok) {
+              throw new Error('خطا در دریافت اطلاعات کاربری از گوگل.');
+            }
+            
+            const userInfo = await userInfoRes.json();
+            const email = userInfo.email || 'حساب گوگل';
+            
+            setGoogleAccessToken(token);
+            setActiveGoogleEmail(email);
+
+            resolve({ email, token });
+          } catch (profileErr) {
+            // Fallback if profile info fetch fails
+            setGoogleAccessToken(token);
+            setActiveGoogleEmail('حساب گوگل');
+            resolve({ email: 'حساب گوگل', token });
+          }
+        },
+        error_callback: (err: any) => {
+          reject(new Error(err.message || 'خطا در ارتباط با گوگل.'));
+        }
+      });
+
+      client.requestAccessToken({ prompt: 'consent' });
+    } catch (err: any) {
+      reject(new Error(err.message || 'خطا در راه‌اندازی احراز هویت گوگل.'));
+    }
+  });
+}
+
+// Find existing backup file ID in Google Drive
 async function findBackupFileId(token: string): Promise<string | null> {
   const query = encodeURIComponent(`name = '${DRIVE_FILE_NAME}' and trashed = false`);
   const url = `https://www.googleapis.com/drive/v3/files?q=${query}&spaces=drive&fields=files(id,name)`;
