@@ -9,6 +9,7 @@ import { FinancialPage } from './components/pages/FinancialPage';
 import { JsonBackupModal } from './components/common/JsonBackupModal';
 import { WordExportModal } from './components/common/WordExportModal';
 import { GoogleDriveModal } from './components/common/GoogleDriveModal';
+import { InstallModal } from './components/common/InstallModal';
 import { formatISODateOnly, getJalaliWeekdayName, getStartOfWeekJalali } from './utils/jalali';
 import { saveToIndexedDB, loadFromIndexedDB } from './utils/indexedDB';
 
@@ -188,13 +189,15 @@ export default function App() {
 
   const [activeTab, setActiveTab] = useState<PageTab>('tasks');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   // Modals
   const [showJsonModal, setShowJsonModal] = useState(false);
   const [showWordModal, setShowWordModal] = useState(false);
   const [showGoogleDriveModal, setShowGoogleDriveModal] = useState(false);
+  const [showInstallModal, setShowInstallModal] = useState(false);
 
-  // Online status listener
+  // Online status & PWA install prompt listener
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
@@ -202,11 +205,35 @@ export default function App() {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
+    const handleBeforeInstall = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
     };
   }, []);
+
+  const handleInstallApp = async () => {
+    if (deferredPrompt) {
+      try {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          setDeferredPrompt(null);
+        }
+      } catch (err) {
+        setShowInstallModal(true);
+      }
+    } else {
+      setShowInstallModal(true);
+    }
+  };
 
   // Auto-save to LocalStorage and IndexedDB whenever appState changes
   useEffect(() => {
@@ -448,6 +475,7 @@ export default function App() {
         onOpenWordModal={() => setShowWordModal(true)}
         onOpenGoogleDriveModal={() => setShowGoogleDriveModal(true)}
         isOnline={isOnline}
+        onInstall={handleInstallApp}
       />
 
       {/* Main Content Body */}
@@ -526,6 +554,13 @@ export default function App() {
         onClose={() => setShowGoogleDriveModal(false)}
         appState={appState}
         onRestoreState={(newState) => setAppState(newState)}
+      />
+
+      {/* PWA Install Guide Modal */}
+      <InstallModal
+        isOpen={showInstallModal}
+        onClose={() => setShowInstallModal(false)}
+        deferredPrompt={deferredPrompt}
       />
     </div>
   );
