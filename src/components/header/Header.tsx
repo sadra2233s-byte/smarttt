@@ -234,10 +234,10 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               type="button"
               onClick={onInstall}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all"
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
               title="نصب اپلیکیشن روی دستگاه"
             >
-              <Download className="w-3.5 h-3.5" />
+              <Download className="w-4 h-4 text-violet-200" />
               <span>نصب اپلیکیشن</span>
             </button>
           </div>
@@ -261,9 +261,9 @@ export const Header: React.FC<HeaderProps> = ({
                     setMobileMenuOpen(false);
                     onInstall();
                   }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-indigo-800 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors text-right"
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-bold text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 rounded-xl transition-all shadow-sm text-right"
                 >
-                  <Download className="w-4 h-4 text-indigo-600" />
+                  <Download className="w-4 h-4 text-violet-200" />
                   <span>نصب اپلیکیشن روی دستگاه</span>
                 </button>
                 {/* Google Drive Sign-in inside 3 dots */}
