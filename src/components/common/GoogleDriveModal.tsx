@@ -270,31 +270,7 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({
             </div>
           )}
 
-          {/* CRITICAL GOOGLE PERMISSION INSTRUCTION CALLOUT (Amber Notice) */}
-          {!isConnected && (
-            <div className="space-y-2.5">
-              <div className="p-3.5 bg-amber-50 border border-amber-200/80 rounded-xl flex items-start gap-2.5 text-amber-950">
-                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <p className="font-bold text-amber-900 text-[11px]">بسیار مهم: راهنمای گام اتصال به گوگل</p>
-                  <p className="leading-relaxed text-[10px] text-amber-800/90">
-                    هنگام باز شدن پنجره ورود به گوگل، حتماً تیک دسترسی به گوگل درایو <span className="font-bold underline text-amber-950">«مشاهده، ویرایش، ایجاد و حذف فایل‌های گوگل درایو»</span> را فعال کنید. در غیر این صورت گوگل اجازه ذخیره فایل را نخواهد داد.
-                  </p>
-                </div>
-              </div>
 
-              {/* Secure Direct Connection Callout */}
-              <div className="p-3 bg-emerald-50/40 border border-emerald-100 rounded-xl flex items-start gap-2.5 text-slate-700">
-                <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <p className="font-bold text-emerald-900 text-[11px]">اتصال ۱۰۰٪ مستقیم و کلاینت‌ساید</p>
-                  <p className="leading-relaxed text-[10px] text-slate-600/90">
-                    این برنامه هیچ سرور، پایگاه داده واسط یا سرویس ابری جانبی (نظیر فایربیس) ندارد. اطلاعات شما به صورت کاملاً مستقیم و امن فقط و فقط درون گوگل درایو شخصی خودتان همگام‌سازی می‌شود.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* SECTION 1: GOOGLE DRIVE CLOUD SYNC */}
           <div className="border border-slate-100 rounded-xl bg-slate-50/50 p-3.5 space-y-3">

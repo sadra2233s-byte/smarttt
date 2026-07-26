@@ -40,7 +40,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenGoogleDriveModal,
   isOnline,
 }) => {
-  const [isDriveSyncing, setIsDriveSyncing] = useState(false);
+  const [driveSyncType, setDriveSyncType] = useState<'save' | 'load' | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -72,7 +72,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   const handleSaveToDrive = async () => {
-    setIsDriveSyncing(true);
+    setDriveSyncType('save');
     try {
       const success = await saveToGoogleDrive(appState);
       if (success) {
@@ -84,12 +84,12 @@ export const Header: React.FC<HeaderProps> = ({
       showToast(err.message || 'خطا در ذخیره‌سازی در گوگل درایو.');
       onOpenGoogleDriveModal();
     } finally {
-      setIsDriveSyncing(false);
+      setDriveSyncType(null);
     }
   };
 
   const handleLoadFromDrive = async () => {
-    setIsDriveSyncing(true);
+    setDriveSyncType('load');
     try {
       const driveState = await loadFromGoogleDrive();
       if (driveState) {
@@ -100,7 +100,7 @@ export const Header: React.FC<HeaderProps> = ({
       showToast(err.message || 'خطا در بازیابی از گوگل درایو.');
       onOpenGoogleDriveModal();
     } finally {
-      setIsDriveSyncing(false);
+      setDriveSyncType(null);
     }
   };
 
@@ -170,22 +170,22 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               type="button"
               onClick={handleSaveToDrive}
-              disabled={isDriveSyncing}
-              className="p-2 bg-white hover:bg-teal-50 text-teal-700 rounded-xl border border-slate-200/80 shadow-xs hover:border-teal-300 transition-all active:scale-95 disabled:opacity-50"
+              disabled={driveSyncType !== null}
+              className="p-2 bg-white hover:bg-teal-50 text-teal-700 rounded-xl border border-slate-200/80 shadow-xs hover:border-teal-300 transition-all active:scale-95 disabled:opacity-50 animate-fade-in"
               title="ذخیره آخرین تغییرات در گوگل درایو"
             >
-              {isDriveSyncing ? <Loader2 className="w-4 h-4 animate-spin text-teal-600" /> : <CloudUpload className="w-4 h-4" />}
+              {driveSyncType === 'save' ? <Loader2 className="w-4 h-4 animate-spin text-teal-600" /> : <CloudUpload className="w-4 h-4" />}
             </button>
 
             {/* 4. Load from Google Drive Button */}
             <button
               type="button"
               onClick={handleLoadFromDrive}
-              disabled={isDriveSyncing}
-              className="p-2 bg-white hover:bg-indigo-50 text-indigo-700 rounded-xl border border-slate-200/80 shadow-xs hover:border-indigo-300 transition-all active:scale-95 disabled:opacity-50"
+              disabled={driveSyncType !== null}
+              className="p-2 bg-white hover:bg-indigo-50 text-indigo-700 rounded-xl border border-slate-200/80 shadow-xs hover:border-indigo-300 transition-all active:scale-95 disabled:opacity-50 animate-fade-in"
               title="اعمال آخرین تغییرات از گوگل درایو"
             >
-              {isDriveSyncing ? <Loader2 className="w-4 h-4 animate-spin text-indigo-600" /> : <CloudDownload className="w-4 h-4" />}
+              {driveSyncType === 'load' ? <Loader2 className="w-4 h-4 animate-spin text-indigo-600" /> : <CloudDownload className="w-4 h-4" />}
             </button>
           </div>
 
