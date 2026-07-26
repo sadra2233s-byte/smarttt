@@ -1,0 +1,8 @@
+{
+  "name": "Remix: Smart Planner",
+  "description": "برنامه‌ریزی هوشمند درس‌ها، پروژه‌ها، عادات روزانه، کارهای روزمره و مدیریت مالی و بودجه",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
