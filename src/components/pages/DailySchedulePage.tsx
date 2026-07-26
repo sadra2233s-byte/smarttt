@@ -528,7 +528,7 @@ export const DailySchedulePage: React.FC<DailySchedulePageProps> = ({
                           <div
                             onClick={() => handleStartInlineTitle(t)}
                             className={`p-2 rounded-xl cursor-pointer hover:bg-emerald-50/80 transition-colors font-bold ${
-                              t.isCompleted ? 'line-through text-slate-400' : 'text-slate-900'
+                              t.isCompleted ? 'text-slate-400' : 'text-slate-900'
                             }`}
                             title="برای ویرایش عنوان کلیک کنید"
                           >
@@ -703,7 +703,7 @@ export const DailySchedulePage: React.FC<DailySchedulePageProps> = ({
                   className="p-4 hover:bg-slate-50 transition-colors space-y-2 cursor-pointer"
                 >
                   <div className="flex items-center justify-between">
-                    <h4 className={`font-bold text-sm ${t.isCompleted ? 'line-through text-slate-400' : 'text-slate-900'}`}>
+                    <h4 className={`font-bold text-sm ${t.isCompleted ? 'text-slate-400' : 'text-slate-900'}`}>
                       {t.title}
                     </h4>
                     <span className="text-xs font-bold text-emerald-700 dir-ltr">
@@ -724,15 +724,6 @@ export const DailySchedulePage: React.FC<DailySchedulePageProps> = ({
                     </button>
 
                     <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => setMobileModalTask(t)}
-                        className="p-1.5 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl transition-colors border border-emerald-200"
-                        title="مشاهده خلاصه و توضیحات کامل"
-                      >
-                        <FileText className="w-4 h-4" />
-                      </button>
-
                       <button
                         type="button"
                         onClick={() => setReminderModalTask(t)}

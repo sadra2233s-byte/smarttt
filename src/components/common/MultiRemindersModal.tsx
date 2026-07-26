@@ -298,16 +298,7 @@ export const MultiRemindersModal: React.FC<MultiRemindersModalProps> = ({
             </div>
 
             {/* Quick Actions Footer */}
-            <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-              <button
-                type="button"
-                onClick={() => handleOpenGoogleCalendar()}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-xl shadow-sm text-xs flex items-center gap-1.5 transition-all"
-              >
-                <ExternalLink className="w-4 h-4" />
-                <span>انتقال همه به گوگل کلندر</span>
-              </button>
-
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
