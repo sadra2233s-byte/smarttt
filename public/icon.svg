@@ -1,29 +1,44 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#065f46" />
-      <stop offset="50%" stop-color="#047857" />
-      <stop offset="100%" stop-color="#022c22" />
+    <linearGradient id="plannerBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#059669" />
+      <stop offset="100%" stop-color="#047857" />
     </linearGradient>
-    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#34d399" />
-      <stop offset="100%" stop-color="#10b981" />
-    </linearGradient>
-    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#000000" flood-opacity="0.35" />
+    <filter id="iconShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.25" />
     </filter>
   </defs>
 
-  <rect width="512" height="512" rx="116" fill="url(#bgGrad)" />
+  <!-- PWA Squircle Background -->
+  <rect width="512" height="512" rx="116" fill="url(#plannerBg)" />
 
-  <circle cx="256" cy="256" r="180" fill="none" stroke="#34d399" stroke-width="4" stroke-opacity="0.15" />
+  <!-- Subtle background accent circle -->
+  <circle cx="256" cy="256" r="170" fill="#ffffff" fill-opacity="0.06" />
 
-  <g filter="url(#glow)">
-    <rect x="140" y="270" width="52" height="110" rx="16" fill="#34d399" opacity="0.9" />
-    <rect x="212" y="210" width="52" height="170" rx="16" fill="#6ee7b7" opacity="0.95" />
-    <rect x="284" y="150" width="52" height="230" rx="16" fill="url(#accentGrad)" />
+  <!-- Central Planner / Checklist Document Shape with Drop Shadow -->
+  <g filter="url(#iconShadow)" transform="translate(116, 96)">
+    <!-- Main Notebook/Planner Card -->
+    <rect x="0" y="0" width="280" height="320" rx="28" fill="#ffffff" />
+    
+    <!-- Planner Header Bar (Emerald accent) -->
+    <path d="M 0 28 A 28 28 0 0 1 28 0 L 252 0 A 28 28 0 0 1 280 28 L 280 72 L 0 72 Z" fill="#10b981" />
 
-    <path d="M 120 230 L 210 140 L 270 200 L 390 90" fill="none" stroke="#ffffff" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" />
-    <circle cx="390" cy="90" r="14" fill="#ffffff" />
+    <!-- Calendar Ring Binding Dots -->
+    <circle cx="84" cy="0" r="10" fill="#047857" />
+    <circle cx="196" cy="0" r="10" fill="#047857" />
+
+    <!-- Checklist Item 1 (Completed with Checkmark) -->
+    <rect x="36" y="104" width="32" height="32" rx="8" fill="#d1fae5" />
+    <path d="M 44 120 L 52 128 L 64 112" fill="none" stroke="#059669" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+    <rect x="84" y="110" width="130" height="20" rx="6" fill="#e5e7eb" />
+
+    <!-- Checklist Item 2 (In Progress / Active) -->
+    <rect x="36" y="164" width="32" height="32" rx="8" fill="#ecfdf5" />
+    <circle cx="52" cy="180" r="6" fill="#10b981" />
+    <rect x="84" y="170" width="160" height="20" rx="6" fill="#374151" />
+
+    <!-- Checklist Item 3 (Pending) -->
+    <rect x="36" y="224" width="32" height="32" rx="8" fill="#f3f4f6" />
+    <rect x="84" y="230" width="100" height="20" rx="6" fill="#9ca3af" />
   </g>
 </svg>
