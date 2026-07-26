@@ -1,68 +1,41 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <linearGradient id="appBg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0f766e" />
-      <stop offset="50%" stop-color="#047857" />
-      <stop offset="100%" stop-color="#312e81" />
+    <linearGradient id="emeraldDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#065f46" />
+      <stop offset="100%" stop-color="#047857" />
     </linearGradient>
-    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#ffffff" />
-      <stop offset="100%" stop-color="#f1f5f9" />
+    <linearGradient id="emeraldMid" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#059669" />
+      <stop offset="100%" stop-color="#10b981" />
     </linearGradient>
-    <linearGradient id="emeraldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="emeraldLight" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#10b981" />
-      <stop offset="100%" stop-color="#059669" />
+      <stop offset="100%" stop-color="#34d399" />
     </linearGradient>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="20" stdDeviation="20" flood-color="#000000" flood-opacity="0.35" />
+    <linearGradient id="emeraldDeep" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#064e3b" />
+      <stop offset="100%" stop-color="#065f46" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="12" flood-color="#000000" flood-opacity="0.25" />
     </filter>
   </defs>
 
-  <!-- iOS / Android Standard Squircle App Icon Background -->
-  <rect width="512" height="512" rx="118" fill="url(#appBg)" />
-  
-  <!-- Subtle top diagonal gloss highlight -->
-  <path d="M 0 0 L 512 0 L 512 240 Q 256 320 0 240 Z" fill="#ffffff" opacity="0.1" />
+  <!-- App Icon Base Background Container with subtle gradient -->
+  <rect width="512" height="512" rx="118" fill="#f0fdf4" />
 
-  {/* Centered Main Icon Graphic */}
-  <g filter="url(#shadow)" transform="translate(64, 64)">
-    <!-- Planner Board Card (384 x 384) -->
-    <rect width="384" height="384" rx="64" fill="url(#cardGrad)" />
+  <!-- Geometric 'F' Logo composed of stacked rounded bars with shadows -->
+  <g filter="url(#shadow)" transform="translate(80, 80) scale(0.68)">
+    {/* Left vertical tall bar */}
+    <rect x="0" y="0" width="120" height="360" rx="36" fill="url(#emeraldDeep)" />
     
-    <!-- Top Header Ribbon -->
-    <path d="M 0 64 A 64 64 0 0 1 64 0 L 320 0 A 64 64 0 0 1 384 64 L 384 140 L 0 140 Z" fill="#0d9488" />
-    
-    <!-- Binding Rings -->
-    <g fill="#94a3b8">
-      <rect x="100" y="24" width="28" height="56" rx="14" />
-      <rect x="256" y="24" width="28" height="56" rx="14" />
-    </g>
+    {/* Left bottom protruding bar segment */}
+    <rect x="0" y="240" width="120" height="120" rx="36" fill="url(#emeraldDark)" />
 
-    {/* Header Accent Dots */}
-    <circle cx="64" cy="70" r="10" fill="#ffffff" opacity="0.9" />
-    <circle cx="96" cy="70" r="10" fill="#ffffff" opacity="0.5" />
-    <circle cx="128" cy="70" r="10" fill="#ffffff" opacity="0.3" />
+    {/* Middle horizontal/vertical block */}
+    <rect x="144" y="0" width="120" height="240" rx="36" fill="url(#emeraldMid)" />
 
-    {/* Row 1: Checkmark & Task */}
-    <g transform="translate(48, 180)">
-      <rect x="0" y="0" width="56" height="56" rx="16" fill="url(#emeraldGrad)" />
-      <path d="M 16 28 L 24 36 L 40 18" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
-      <rect x="80" y="14" width="190" height="16" rx="8" fill="#1e293b" />
-      <rect x="80" y="38" width="110" height="12" rx="6" fill="#64748b" />
-    </g>
-
-    {/* Row 2: Financial / Progress Bar */}
-    <g transform="translate(48, 270)">
-      <rect x="0" y="0" width="56" height="56" rx="16" fill="#e0e7ff" />
-      <path d="M 16 38 L 26 26 L 34 32 L 42 18" fill="none" stroke="#4f46e5" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
-      <rect x="80" y="14" width="220" height="16" rx="8" fill="#334155" />
-      <rect x="80" y="38" width="140" height="12" rx="6" fill="#94a3b8" />
-    </g>
-
-    {/* Floating Gold/Star Badge Top Right */}
-    <g transform="translate(310, 100)">
-      <circle cx="24" cy="24" r="32" fill="#ffffff" filter="url(#shadow)" />
-      <path d="M 24 6 Q 24 24 6 24 Q 24 24 24 42 Q 24 24 42 24 Q 24 24 24 6 Z" fill="#f59e0b" />
-    </g>
+    {/* Top right floating block */}
+    <rect x="288" y="0" width="120" height="200" rx="36" fill="url(#emeraldLight)" />
   </g>
 </svg>
