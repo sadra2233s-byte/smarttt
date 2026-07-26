@@ -89,6 +89,7 @@ export const FinancialPage: React.FC<FinancialPageProps> = ({
   // Modals
   const [detailedModalTx, setDetailedModalTx] = useState<FinancialTransaction | null>(null);
   const [mobileModalTx, setMobileModalTx] = useState<FinancialTransaction | null>(null);
+  const [mobileModalLoan, setMobileModalLoan] = useState<LoanInstallment | null>(null);
 
   // Confirm Delete Targets
   const [deleteTargetTx, setDeleteTargetTx] = useState<{ id: string; title: string } | null>(null);
@@ -693,38 +694,17 @@ export const FinancialPage: React.FC<FinancialPageProps> = ({
                         <span>جزئیات</span>
                       </button>
 
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingTxId(f.id);
-                            setTitle(f.title);
-                            setType(f.type);
-                            setAmount(f.amount);
-                            setDateType(f.dateType);
-                            setCustomDateISO(f.dateISO);
-                            setCustomTimeStr(f.timeStr);
-                            setSummary(f.summary);
-                            setDetailedDescription(f.detailedDescription);
-                            setShowTxForm(true);
-                          }}
-                          className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs flex items-center gap-1"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                          <span>ویرایش</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleConfirmDeleteTransaction(f.id, f.title);
-                          }}
-                          className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-xl cursor-pointer"
-                          title="حذف"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleConfirmDeleteTransaction(f.id, f.title);
+                        }}
+                        className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-xl cursor-pointer"
+                        title="حذف"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -919,7 +899,12 @@ export const FinancialPage: React.FC<FinancialPageProps> = ({
                   <tbody className="divide-y divide-slate-100">
                     {loans.map((loan) => (
                       <tr key={loan.id} className="hover:bg-slate-50">
-                        <td className="p-3 font-bold text-slate-900">{loan.title}</td>
+                        <td 
+                          className="p-3 font-bold text-slate-900 cursor-pointer hover:text-blue-600 transition-colors"
+                          onClick={() => setMobileModalLoan(loan)}
+                        >
+                          {loan.title}
+                        </td>
                         <td className="p-3 font-semibold">{toPersianDigits(loan.totalAmount.toLocaleString())} تومان</td>
                         <td className="p-3 font-semibold text-blue-800">{toPersianDigits(loan.monthlyAmount.toLocaleString())} تومان</td>
                         <td className="p-3 text-center font-bold">{toPersianDigits(loan.remainingPayments)} قسط</td>
@@ -931,6 +916,15 @@ export const FinancialPage: React.FC<FinancialPageProps> = ({
                         </td>
                         <td className="p-3 text-center">
                           <div className="flex items-center justify-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setMobileModalLoan(loan)}
+                              className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-800 font-bold rounded-lg border border-blue-200/60 inline-flex items-center gap-1 transition-all"
+                              title="مشاهده جزئیات"
+                            >
+                              <FileText className="w-3.5 h-3.5" />
+                              <span>مشاهده</span>
+                            </button>
                             <button
                               type="button"
                               onClick={() => {
@@ -970,7 +964,11 @@ export const FinancialPage: React.FC<FinancialPageProps> = ({
               {/* MOBILE RESPONSIVE LOANS LIST */}
               <div className="block lg:hidden divide-y divide-slate-100">
                 {loans.map((loan) => (
-                  <div key={loan.id} className="p-4 space-y-2.5">
+                  <div 
+                    key={loan.id} 
+                    onClick={() => setMobileModalLoan(loan)}
+                    className="p-4 space-y-2.5 cursor-pointer hover:bg-slate-50 transition-colors"
+                  >
                     <div className="flex items-center justify-between">
                       <h4 className="font-bold text-sm text-slate-900">{loan.title}</h4>
                       <span className="font-black text-xs text-blue-800">
@@ -990,34 +988,26 @@ export const FinancialPage: React.FC<FinancialPageProps> = ({
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-100" onClick={(e) => e.stopPropagation()}>
                       <button
                         type="button"
-                        onClick={() => {
-                          setEditingLoanId(loan.id);
-                          setLoanTitle(loan.title);
-                          setLoanTotalAmount(loan.totalAmount);
-                          setLoanMonthlyAmount(loan.monthlyAmount);
-                          setLoanRemainingPayments(loan.remainingPayments);
-                          setLoanDueDateStr(loan.dueDateStr);
-                          setLoanStatus(loan.status);
-                          setShowLoanForm(true);
-                        }}
-                        className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs flex items-center gap-1 transition-all"
+                        onClick={() => setMobileModalLoan(loan)}
+                        className="px-3 py-1 bg-blue-50 hover:bg-blue-100 text-blue-800 font-bold rounded-xl text-xs flex items-center gap-1"
                       >
-                        <Edit2 className="w-3.5 h-3.5" />
-                        <span>ویرایش</span>
+                        <FileText className="w-3.5 h-3.5" />
+                        <span>جزئیات</span>
                       </button>
+
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleConfirmDeleteLoan(loan.id, loan.title);
                         }}
-                        className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl text-xs flex items-center gap-1 transition-all cursor-pointer"
+                        className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-xl cursor-pointer"
+                        title="حذف"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>حذف</span>
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
@@ -1026,6 +1016,40 @@ export const FinancialPage: React.FC<FinancialPageProps> = ({
             </>
           )}
         </div>
+      )}
+
+      {/* MOBILE LOAN DETAIL MODAL */}
+      {mobileModalLoan && (
+        <DetailedModal
+          isOpen={Boolean(mobileModalLoan)}
+          onClose={() => setMobileModalLoan(null)}
+          title={mobileModalLoan.title}
+          amount={mobileModalLoan.totalAmount}
+          status={mobileModalLoan.status}
+          summary={`قسط ماهانه: ${mobileModalLoan.monthlyAmount.toLocaleString()} تومان | اقساط باقیمانده: ${mobileModalLoan.remainingPayments} قسط`}
+          detailedDescription={`عنوان وام / تسهیلات: ${mobileModalLoan.title}\nمبلغ کل: ${mobileModalLoan.totalAmount.toLocaleString()} تومان\nمبلغ قسط ماهانه: ${mobileModalLoan.monthlyAmount.toLocaleString()} تومان\nتعداد اقساط باقیمانده: ${mobileModalLoan.remainingPayments}\nموعد پرداخت: ${formatJalaliFull(mobileModalLoan.dueDateStr)}\nوضعیت: ${
+            mobileModalLoan.status === 'paid' ? 'پرداخت شده' : mobileModalLoan.status === 'pending' ? 'در انتظار پرداخت' : 'معوقه'
+          }`}
+          createdDateISO={mobileModalLoan.createdAtISO?.slice(0, 10)}
+          deadlineDate={mobileModalLoan.dueDateStr}
+          onEdit={() => {
+            const target = mobileModalLoan;
+            setMobileModalLoan(null);
+            setEditingLoanId(target.id);
+            setLoanTitle(target.title);
+            setLoanTotalAmount(target.totalAmount);
+            setLoanMonthlyAmount(target.monthlyAmount);
+            setLoanRemainingPayments(target.remainingPayments);
+            setLoanDueDateStr(target.dueDateStr);
+            setLoanStatus(target.status);
+            setShowLoanForm(true);
+          }}
+          onDelete={() => {
+            onDeleteLoan(mobileModalLoan.id);
+            setMobileModalLoan(null);
+          }}
+          readOnly={true}
+        />
       )}
 
       {/* MOBILE DETAIL MODAL */}

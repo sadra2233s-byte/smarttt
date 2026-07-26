@@ -254,8 +254,10 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
 
             {mobileMenuOpen && (
-              <div className="absolute left-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-200/80 p-2 z-50 animate-fade-in space-y-1">
-                <button
+              <>
+                <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setMobileMenuOpen(false)} />
+                <div className="absolute left-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-200/80 p-2 z-50 animate-fade-in space-y-1">
+                  <button
                   type="button"
                   onClick={() => {
                     setMobileMenuOpen(false);
@@ -305,6 +307,7 @@ export const Header: React.FC<HeaderProps> = ({
                   <span>ساخت فایل PDF</span>
                 </button>
               </div>
+            </>
             )}
           </div>
         </div>
