@@ -112,12 +112,9 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3">
         {/* Brand Logo & Name */}
         <div className="flex items-center gap-3">
-          <img
-            src="/icon.png"
-            alt="Smart Planner Notebook Icon"
-            className="w-10 h-10 rounded-2xl object-cover shadow-md border border-amber-200/80 hover:scale-105 transition-transform"
-            referrerPolicy="no-referrer"
-          />
+          <div className="relative flex items-center justify-center w-10 h-10 rounded-2xl bg-gradient-to-tr from-teal-700 via-teal-600 to-emerald-500 text-white shadow-md shadow-teal-700/20">
+            <Sparkles className="w-5 h-5 animate-pulse" />
+          </div>
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-base sm:text-lg font-black tracking-tight text-slate-800">

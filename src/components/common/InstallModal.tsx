@@ -52,12 +52,9 @@ export const InstallModal: React.FC<InstallModalProps> = ({
             <X className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-3">
-            <img
-              src="/icon.png"
-              alt="Smart Planner Icon"
-              className="w-12 h-12 rounded-2xl object-cover shadow-md border-2 border-white/30 shrink-0"
-              referrerPolicy="no-referrer"
-            />
+            <div className="w-12 h-12 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center shadow-inner">
+              <Download className="w-6 h-6 text-teal-200" />
+            </div>
             <div>
               <h3 className="text-lg font-bold">نصب اپلیکیشن برنامه‌ریز هوشمند</h3>
               <p className="text-xs text-teal-100 mt-0.5">دسترس‌پذیری سریع، کارکرد آفلاین و تجربه اپلیکیشن بومی</p>
