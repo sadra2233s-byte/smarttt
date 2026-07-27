@@ -22,31 +22,31 @@
     </filter>
   </defs>
 
-  {/* Background Rounded Squircle with Gradient */}
+  <!-- Background Rounded Squircle with Gradient -->
   <rect width="512" height="512" rx="118" fill="url(#bgGrad)" />
   
-  {/* Glossy overlay */}
+  <!-- Glossy overlay -->
   <path d="M 0 0 L 512 0 L 512 256 Q 256 320 0 256 Z" fill="#ffffff" opacity="0.08" />
 
-  {/* Main Planner Card with Drop Shadow */}
+  <!-- Main Planner Card with Drop Shadow -->
   <g filter="url(#dropShadow)" transform="translate(64, 64)">
     <rect width="384" height="384" rx="56" fill="url(#cardGrad)" />
     
-    {/* Header Banner */}
+    <!-- Header Banner -->
     <path d="M 0 56 A 56 56 0 0 1 56 0 L 328 0 A 56 56 0 0 1 384 56 L 384 136 L 0 136 Z" fill="url(#headerGrad)" />
     
-    {/* Spiral Binding Rings */}
+    <!-- Spiral Binding Rings -->
     <g fill="#94a3b8">
       <rect x="96" y="20" width="28" height="56" rx="14" />
       <rect x="260" y="20" width="28" height="56" rx="14" />
     </g>
 
-    {/* Header Dots */}
+    <!-- Header Dots -->
     <circle cx="56" cy="68" r="8" fill="#ffffff" opacity="0.9" />
     <circle cx="84" cy="68" r="8" fill="#ffffff" opacity="0.5" />
     <circle cx="112" cy="68" r="8" fill="#ffffff" opacity="0.3" />
 
-    {/* Task Item 1 (Completed with Check) */}
+    <!-- Task Item 1 (Completed with Check) -->
     <g transform="translate(48, 176)">
       <rect x="0" y="0" width="40" height="40" rx="12" fill="url(#accentGrad)" />
       <path d="M 12 20 L 18 26 L 28 14" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
@@ -54,7 +54,7 @@
       <rect x="64" y="28" width="100" height="8" rx="4" fill="#e2e8f0" />
     </g>
 
-    {/* Task Item 2 (Active Planner Row) */}
+    <!-- Task Item 2 (Active Planner Row) -->
     <g transform="translate(48, 252)">
       <rect x="0" y="0" width="40" height="40" rx="12" fill="#e0e7ff" />
       <rect x="12" y="12" width="16" height="16" rx="4" fill="#4f46e5" />
@@ -62,9 +62,9 @@
       <rect x="64" y="28" width="140" height="8" rx="4" fill="#94a3b8" />
     </g>
 
-    {/* Sparkle Star Badge for Smart AI touch */}
+    <!-- Sparkle Star Badge for Smart AI touch -->
     <g transform="translate(310, 110)">
-      <circle cx="24" cy="24" r="32" fill="#ffffff" filter="url(#dropShadow)" />
+      <circle cx="24" cy="24" r="32" fill="#ffffff" stroke="#e2e8f0" stroke-width="2" />
       <path d="M 24 8 Q 24 24 8 24 Q 24 24 24 40 Q 24 24 40 24 Q 24 24 24 8 Z" fill="#f59e0b" />
     </g>
   </g>
