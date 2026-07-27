@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Plus,
   Trash2,
@@ -17,6 +18,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Clock3,
+  Check,
 } from 'lucide-react';
 import { FinancialTransaction, FinancialType, FinancialDateType, LoanInstallment } from '../../types';
 import {
@@ -25,6 +27,9 @@ import {
   getJalaliWeekdayName,
   toPersianDigits,
   parseDateToJalali,
+  jalaliToGregorian,
+  getJalaliDaysInMonth,
+  formatISODateOnly,
 } from '../../utils/jalali';
 import { JalaliDatePickerModal } from '../common/JalaliDatePickerModal';
 import { TimePickerModal } from '../common/TimePickerModal';
@@ -34,6 +39,9 @@ import { ConfirmDeleteModal } from '../common/ConfirmDeleteModal';
 interface FinancialPageProps {
   financials: FinancialTransaction[];
   loans: LoanInstallment[];
+  filterStart?: string;
+  filterEnd?: string;
+  onUpdateFilterDates?: (start: string, end: string) => void;
   onAddTransaction: (tx: Omit<FinancialTransaction, 'id' | 'createdAtISO' | 'dayOfWeekName'>) => void;
   onUpdateTransaction: (tx: FinancialTransaction) => void;
   onDeleteTransaction: (id: string) => void;
@@ -45,6 +53,9 @@ interface FinancialPageProps {
 export const FinancialPage: React.FC<FinancialPageProps> = ({
   financials,
   loans,
+  filterStart,
+  filterEnd,
+  onUpdateFilterDates,
   onAddTransaction,
   onUpdateTransaction,
   onDeleteTransaction,
@@ -78,9 +89,14 @@ export const FinancialPage: React.FC<FinancialPageProps> = ({
   const [loanDueDateStr, setLoanDueDateStr] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [loanStatus, setLoanStatus] = useState<'paid' | 'pending' | 'overdue'>('pending');
 
-  // Filter Date Range for Transactions
-  const [filterStartDate, setFilterStartDate] = useState<string>('');
-  const [filterEndDate, setFilterEndDate] = useState<string>('');
+  // Filter Date Range for Transactions (synced with appState props)
+  const filterStartDate = filterStart || '';
+  const filterEndDate = filterEnd || '';
+
+  // Range Filter Modal state
+  const [showRangeFilterModal, setShowRangeFilterModal] = useState(false);
+  const [tempFilterStart, setTempFilterStart] = useState(filterStartDate);
+  const [tempFilterEnd, setTempFilterEnd] = useState(filterEndDate);
 
   // Active Date Picker
   const [datePickerTarget, setDatePickerTarget] = useState<'customTx' | 'filterStart' | 'filterEnd' | 'loanDue' | null>(null);
@@ -328,12 +344,9 @@ export const FinancialPage: React.FC<FinancialPageProps> = ({
       </div>
 
       {/* --- ADD TRANSACTION FORM MODAL --- */}
-      {showTxForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm overflow-y-auto animate-fade-in">
-          {/* Backdrop Click Closes Form */}
-          <div className="absolute inset-0 transition-opacity" onClick={resetTxForm} />
-          
-          <div className="relative w-full max-w-lg bg-white rounded-3xl p-7 border border-blue-500/20 shadow-2xl shadow-indigo-950/10 space-y-6 text-xs z-10 max-h-[95vh] overflow-y-auto transform scale-100 transition-all">
+      {showTxForm && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm overflow-y-auto animate-fade-in">
+          <div className="relative w-full max-w-lg bg-white rounded-3xl p-7 border border-blue-500/20 shadow-2xl shadow-indigo-950/10 space-y-6 text-xs my-auto transform scale-100 transition-all">
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
               <div className="flex items-center gap-3">
@@ -485,62 +498,75 @@ export const FinancialPage: React.FC<FinancialPageProps> = ({
               </div>
 
               {/* Action Buttons */}
-              <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
+              <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={resetTxForm}
-                  className="px-5 py-3 font-bold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-2xl transition-all"
+                  className="px-5 py-2.5 font-bold text-xs text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-2xl transition-all"
                 >
                   انصراف
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-gradient-to-r from-blue-700 via-indigo-700 to-indigo-850 hover:from-blue-800 hover:via-indigo-800 hover:to-indigo-950 text-white font-bold rounded-2xl shadow-md hover:shadow-lg transition-all active:scale-95"
+                  className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:via-indigo-700 hover:to-blue-800 text-white font-bold text-xs rounded-2xl shadow-lg shadow-blue-600/25 hover:shadow-xl hover:shadow-blue-600/35 transition-all active:scale-95 cursor-pointer"
                 >
-                  {editingTxId ? 'ذخیره تغییرات' : 'ثبت در جدول مالی'}
+                  {editingTxId ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                  <span>{editingTxId ? 'ذخیره تغییرات' : 'ثبت در جدول مالی'}</span>
                 </button>
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* --- TAB 1: TRANSACTIONS TABLE --- */}
       {activeTab === 'transactions' && (
         <div className="bg-white rounded-3xl border border-slate-200/80 shadow-lg overflow-hidden space-y-3 p-4">
-          {/* Date Range Filter Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-200/80">
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
-              <Filter className="w-4 h-4 text-blue-600" />
-              <span>فیلتر بازه زمانی جدول تراکنش‌ها:</span>
+          {/* Date Range Filter Banner & Button */}
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 bg-gradient-to-r from-blue-50/90 via-slate-50 to-indigo-50/70 rounded-2xl border border-blue-100 shadow-sm">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-600/20">
+                <Filter className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-xs font-black text-slate-800 block">فیلتر بازه زمانی تراکنش‌ها</span>
+                <span className="text-[11px] text-slate-500 font-medium">
+                  {(filterStartDate || filterEndDate)
+                    ? `محدود شده به: ${filterStartDate ? formatJalaliShort(filterStartDate) : 'از ابتدا'} تا ${filterEndDate ? formatJalaliShort(filterEndDate) : 'تا انتها'}`
+                    : 'در حال حاضر همه تراکنش‌ها نمایش داده می‌شوند'}
+                </span>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2 text-xs">
+            <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => setDatePickerTarget('filterStart')}
-                className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-700 hover:bg-slate-100 transition-all"
+                onClick={() => {
+                  setTempFilterStart(filterStartDate);
+                  setTempFilterEnd(filterEndDate);
+                  setShowRangeFilterModal(true);
+                }}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm ${
+                  (filterStartDate || filterEndDate)
+                    ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-600/20 ring-2 ring-blue-300'
+                    : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 hover:border-blue-300'
+                }`}
               >
-                از: {filterStartDate ? formatJalaliShort(filterStartDate) : 'از ابتدا'}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setDatePickerTarget('filterEnd')}
-                className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-700 hover:bg-slate-100 transition-all"
-              >
-                تا: {filterEndDate ? formatJalaliShort(filterEndDate) : 'تا انتها'}
+                <Calendar className="w-4 h-4" />
+                <span>
+                  {(filterStartDate || filterEndDate)
+                    ? `بازه: ${filterStartDate ? formatJalaliShort(filterStartDate) : 'ابتدا'} تا ${filterEndDate ? formatJalaliShort(filterEndDate) : 'انتها'}`
+                    : 'تنظیم بازه زمانی فیلتر'}
+                </span>
               </button>
 
               {(filterStartDate || filterEndDate) && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setFilterStartDate('');
-                    setFilterEndDate('');
-                  }}
-                  className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
-                  title="پاکسازی فیلتر"
+                  onClick={() => onUpdateFilterDates?.('', '')}
+                  className="p-2 text-rose-600 hover:bg-rose-50 border border-rose-200 bg-white rounded-xl transition-all shadow-sm"
+                  title="حذف فیلتر و نمایش همه"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -730,12 +756,9 @@ export const FinancialPage: React.FC<FinancialPageProps> = ({
           </div>
 
           {/* ADD LOAN FORM MODAL */}
-          {showLoanForm && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm overflow-y-auto animate-fade-in">
-              {/* Backdrop Click Closes Form */}
-              <div className="absolute inset-0 transition-opacity" onClick={resetLoanForm} />
-              
-              <div className="relative w-full max-w-lg bg-white rounded-3xl p-7 border border-blue-500/20 shadow-2xl shadow-indigo-950/10 space-y-6 text-xs z-10 max-h-[95vh] overflow-y-auto transform scale-100 transition-all">
+          {showLoanForm && createPortal(
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm overflow-y-auto animate-fade-in">
+              <div className="relative w-full max-w-lg bg-white rounded-3xl p-7 border border-blue-500/20 shadow-2xl shadow-indigo-950/10 space-y-6 text-xs my-auto transform scale-100 transition-all">
                 {/* Modal Header */}
                 <div className="flex items-center justify-between pb-4 border-b border-slate-100">
                   <div className="flex items-center gap-3">
@@ -856,24 +879,26 @@ export const FinancialPage: React.FC<FinancialPageProps> = ({
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
+                  <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
                     <button
                       type="button"
                       onClick={resetLoanForm}
-                      className="px-5 py-3 font-bold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-2xl transition-all"
+                      className="px-5 py-2.5 font-bold text-xs text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-2xl transition-all"
                     >
                       انصراف
                     </button>
                     <button
                       type="submit"
-                      className="px-6 py-3 bg-gradient-to-r from-blue-700 via-indigo-700 to-indigo-850 hover:from-blue-800 hover:via-indigo-800 hover:to-indigo-950 text-white font-bold rounded-2xl shadow-md hover:shadow-lg transition-all active:scale-95"
+                      className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:via-indigo-700 hover:to-blue-800 text-white font-bold text-xs rounded-2xl shadow-lg shadow-blue-600/25 hover:shadow-xl hover:shadow-blue-600/35 transition-all active:scale-95 cursor-pointer"
                     >
-                      {editingLoanId ? 'ذخیره تغییرات قسط' : 'افزودن قسط'}
+                      {editingLoanId ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                      <span>{editingLoanId ? 'ذخیره تغییرات قسط' : 'افزودن قسط'}</span>
                     </button>
                   </div>
                 </form>
               </div>
-            </div>
+            </div>,
+            document.body
           )}
 
           {loans.length === 0 ? (
@@ -1124,6 +1149,193 @@ export const FinancialPage: React.FC<FinancialPageProps> = ({
         />
       )}
 
+      {/* DATE RANGE FILTER MODAL */}
+      {showRangeFilterModal && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-md overflow-hidden transform transition-all my-auto">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-teal-700 p-4 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-white/15 rounded-xl backdrop-blur">
+                  <Calendar className="w-5 h-5 text-sky-200" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base">انتخاب بازه زمانی تراکنش‌ها</h3>
+                  <p className="text-[11px] text-blue-100">نمایش تراکنش‌های مالی در تاریخ‌های مشخص شده</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowRangeFilterModal(false)}
+                className="p-1.5 rounded-full hover:bg-white/20 text-white/80 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-5 space-y-4 bg-slate-50/50">
+              {/* Quick Presets */}
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-2">میانبرهای سریع:</label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const today = new Date();
+                      const j = parseDateToJalali(today);
+                      const startG = jalaliToGregorian(j.jy, j.jm, 1);
+                      const daysInM = getJalaliDaysInMonth(j.jy, j.jm);
+                      const endG = jalaliToGregorian(j.jy, j.jm, daysInM);
+
+                      const startISO = `${startG.gy}-${String(startG.gm).padStart(2, '0')}-${String(startG.gd).padStart(2, '0')}`;
+                      const endISO = `${endG.gy}-${String(endG.gm).padStart(2, '0')}-${String(endG.gd).padStart(2, '0')}`;
+                      setTempFilterStart(startISO);
+                      setTempFilterEnd(endISO);
+                    }}
+                    className="px-2.5 py-1.5 bg-white border border-slate-200 hover:border-blue-300 hover:bg-blue-50 text-slate-700 hover:text-blue-700 text-xs font-medium rounded-xl transition-all"
+                  >
+                    ماه جاری
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const end = new Date();
+                      const start = new Date();
+                      start.setDate(end.getDate() - 30);
+                      setTempFilterStart(formatISODateOnly(start));
+                      setTempFilterEnd(formatISODateOnly(end));
+                    }}
+                    className="px-2.5 py-1.5 bg-white border border-slate-200 hover:border-blue-300 hover:bg-blue-50 text-slate-700 hover:text-blue-700 text-xs font-medium rounded-xl transition-all"
+                  >
+                    ۳۰ روز اخیر
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const today = new Date();
+                      const j = parseDateToJalali(today);
+                      const startG = jalaliToGregorian(j.jy, 1, 1);
+                      const endG = jalaliToGregorian(j.jy, 12, 29);
+                      setTempFilterStart(`${startG.gy}-${String(startG.gm).padStart(2, '0')}-${String(startG.gd).padStart(2, '0')}`);
+                      setTempFilterEnd(`${endG.gy}-${String(endG.gm).padStart(2, '0')}-${String(endG.gd).padStart(2, '0')}`);
+                    }}
+                    className="px-2.5 py-1.5 bg-white border border-slate-200 hover:border-blue-300 hover:bg-blue-50 text-slate-700 hover:text-blue-700 text-xs font-medium rounded-xl transition-all"
+                  >
+                    امسال
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTempFilterStart('');
+                      setTempFilterEnd('');
+                    }}
+                    className="px-2.5 py-1.5 bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 text-xs font-medium rounded-xl transition-all"
+                  >
+                    حذف فیلتر
+                  </button>
+                </div>
+              </div>
+
+              {/* Start and End Date Pickers */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                {/* Start Date Card */}
+                <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                  <span className="text-xs font-bold text-slate-600 block">از تاریخ (شروع):</span>
+                  <div className="text-xs font-black text-blue-900 leading-relaxed min-h-[2.5rem] flex items-center">
+                    {tempFilterStart ? formatJalaliFull(tempFilterStart) : 'از ابتدا (بدون محدودیت)'}
+                  </div>
+                  <div className="flex gap-1.5 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setDatePickerTarget('filterStart')}
+                      className="flex-1 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1 border border-blue-200/60"
+                    >
+                      <Calendar className="w-3.5 h-3.5" />
+                      <span>انتخاب از تقویم</span>
+                    </button>
+                    {tempFilterStart && (
+                      <button
+                        type="button"
+                        onClick={() => setTempFilterStart('')}
+                        className="px-2 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs rounded-xl"
+                        title="پاکسازی تاریخ شروع"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* End Date Card */}
+                <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                  <span className="text-xs font-bold text-slate-600 block">تا تاریخ (پایان):</span>
+                  <div className="text-xs font-black text-blue-900 leading-relaxed min-h-[2.5rem] flex items-center">
+                    {tempFilterEnd ? formatJalaliFull(tempFilterEnd) : 'تا انتها (بدون محدودیت)'}
+                  </div>
+                  <div className="flex gap-1.5 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setDatePickerTarget('filterEnd')}
+                      className="flex-1 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1 border border-blue-200/60"
+                    >
+                      <Calendar className="w-3.5 h-3.5" />
+                      <span>انتخاب از تقویم</span>
+                    </button>
+                    {tempFilterEnd && (
+                      <button
+                        type="button"
+                        onClick={() => setTempFilterEnd('')}
+                        className="px-2 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs rounded-xl"
+                        title="پاکسازی تاریخ پایان"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Active Summary */}
+              <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-2xl text-xs text-blue-950 font-medium">
+                {(tempFilterStart || tempFilterEnd) ? (
+                  <span>
+                    فیلتر انتخابی: از{' '}
+                    <strong className="font-bold">{tempFilterStart ? formatJalaliShort(tempFilterStart) : 'ابتدا'}</strong>{' '}
+                    تا{' '}
+                    <strong className="font-bold">{tempFilterEnd ? formatJalaliShort(tempFilterEnd) : 'انتها'}</strong>
+                  </span>
+                ) : (
+                  <span>هیچ فیلتر تاریخی تنظیم نشده است (نمایش تمام تراکنش‌ها).</span>
+                )}
+              </div>
+
+              {/* Modal Actions */}
+              <div className="pt-3 flex items-center justify-end gap-3 border-t border-slate-200/80">
+                <button
+                  type="button"
+                  onClick={() => setShowRangeFilterModal(false)}
+                  className="px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-all"
+                >
+                  انصراف
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onUpdateFilterDates?.(tempFilterStart, tempFilterEnd);
+                    setShowRangeFilterModal(false);
+                  }}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:via-indigo-700 hover:to-blue-800 text-white text-xs font-bold rounded-xl shadow-lg shadow-blue-600/25 hover:shadow-xl hover:shadow-blue-600/35 transition-all active:scale-95 cursor-pointer"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>اعمال و ذخیره فیلتر</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       {/* JALALI DATE PICKERS */}
       <JalaliDatePickerModal
         isOpen={Boolean(datePickerTarget)}
@@ -1132,15 +1344,25 @@ export const FinancialPage: React.FC<FinancialPageProps> = ({
           datePickerTarget === 'customTx'
             ? customDateISO
             : datePickerTarget === 'filterStart'
-            ? filterStartDate
+            ? (showRangeFilterModal ? tempFilterStart || new Date().toISOString().slice(0, 10) : filterStartDate || new Date().toISOString().slice(0, 10))
             : datePickerTarget === 'filterEnd'
-            ? filterEndDate
+            ? (showRangeFilterModal ? tempFilterEnd || new Date().toISOString().slice(0, 10) : filterEndDate || new Date().toISOString().slice(0, 10))
             : loanDueDateStr
         }
         onSelectDate={(iso) => {
           if (datePickerTarget === 'customTx') setCustomDateISO(iso);
-          if (datePickerTarget === 'filterStart') setFilterStartDate(iso);
-          if (datePickerTarget === 'filterEnd') setFilterEndDate(iso);
+          if (datePickerTarget === 'filterStart') {
+            setTempFilterStart(iso);
+            if (!showRangeFilterModal) {
+              onUpdateFilterDates?.(iso, filterEndDate);
+            }
+          }
+          if (datePickerTarget === 'filterEnd') {
+            setTempFilterEnd(iso);
+            if (!showRangeFilterModal) {
+              onUpdateFilterDates?.(filterStartDate, iso);
+            }
+          }
           if (datePickerTarget === 'loanDue') setLoanDueDateStr(iso);
         }}
       />

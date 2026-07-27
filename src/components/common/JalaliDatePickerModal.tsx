@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Calendar, ChevronRight, ChevronLeft, Check, X } from 'lucide-react';
 import {
   JALALI_MONTH_NAMES,
@@ -122,9 +123,9 @@ export const JalaliDatePickerModal: React.FC<JalaliDatePickerModalProps> = ({
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-sm overflow-hidden transform transition-all">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
+      <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-sm overflow-hidden transform transition-all my-auto">
         {/* Header */}
         <div className="bg-gradient-to-r from-teal-700 via-teal-600 to-emerald-600 p-4 text-white flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -239,6 +240,7 @@ export const JalaliDatePickerModal: React.FC<JalaliDatePickerModalProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

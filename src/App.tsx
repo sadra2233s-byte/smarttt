@@ -436,6 +436,14 @@ export default function App() {
     }));
   };
 
+  const handleUpdateFinancialFilter = (start: string, end: string) => {
+    setAppState((prev) => ({
+      ...prev,
+      financialFilterStart: start,
+      financialFilterEnd: end,
+    }));
+  };
+
   // Loans
   const handleAddLoan = (loanData: Omit<LoanInstallment, 'id' | 'createdAtISO'>) => {
     const newLoan: LoanInstallment = {
@@ -514,6 +522,9 @@ export default function App() {
           <FinancialPage
             financials={appState.financials}
             loans={appState.loans}
+            filterStart={appState.financialFilterStart}
+            filterEnd={appState.financialFilterEnd}
+            onUpdateFilterDates={handleUpdateFinancialFilter}
             onAddTransaction={handleAddTransaction}
             onUpdateTransaction={handleUpdateTransaction}
             onDeleteTransaction={handleDeleteTransaction}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X,
   CheckCircle2,
@@ -227,9 +228,9 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({
     });
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in font-['Vazirmatn',sans-serif]">
-      <div className="bg-white rounded-2xl shadow-xl border border-slate-200/85 w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-fade-in font-['Vazirmatn',sans-serif] overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-xl border border-slate-200/85 w-full max-w-md overflow-hidden flex flex-col max-h-[90vh] my-auto">
         
         {/* Header */}
         <div className="bg-gradient-to-r from-teal-700 to-teal-800 text-white p-4.5 flex items-center justify-between shrink-0">
@@ -523,6 +524,7 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

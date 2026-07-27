@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   FileText,
   Clock,
@@ -106,8 +107,8 @@ export const DetailedModal: React.FC<DetailedModalProps> = ({
     );
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md animate-fade-in overflow-y-auto">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md animate-fade-in overflow-y-auto">
       <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-md overflow-hidden transform transition-all my-auto">
         {/* Header Banner */}
         <div className="bg-gradient-to-r from-teal-900 via-teal-800 to-emerald-900 p-5 text-white relative overflow-hidden">
@@ -282,7 +283,7 @@ export const DetailedModal: React.FC<DetailedModalProps> = ({
                 <button
                   type="button"
                   onClick={handleConfirmSave}
-                  className="flex items-center gap-1 px-4 py-2 bg-gradient-to-r from-teal-700 to-emerald-700 hover:from-teal-800 hover:to-emerald-800 text-white font-extrabold text-xs rounded-xl shadow-md transition-all active:scale-95"
+                  className="flex items-center gap-1.5 px-4.5 py-2 bg-gradient-to-r from-teal-600 via-emerald-600 to-teal-700 hover:from-teal-700 hover:to-emerald-800 text-white font-black text-xs rounded-xl shadow-md shadow-teal-600/20 transition-all active:scale-95 cursor-pointer"
                 >
                   <Check className="w-4 h-4" />
                   <span>ذخیره تغییرات</span>
@@ -312,6 +313,7 @@ export const DetailedModal: React.FC<DetailedModalProps> = ({
         }}
         title={`آیا از حذف «${title}» اطمینان دارید؟`}
       />
-    </div>
+    </div>,
+    document.body
   );
 };

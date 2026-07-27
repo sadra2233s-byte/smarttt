@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Plus,
   Trash2,
@@ -355,12 +356,9 @@ export const DailySchedulePage: React.FC<DailySchedulePageProps> = ({
       </div>
 
       {/* ADD DAILY TASK FORM MODAL */}
-      {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm overflow-y-auto animate-fade-in">
-          {/* Backdrop Click Closes Form */}
-          <div className="absolute inset-0 transition-opacity" onClick={resetForm} />
-          
-          <div className="relative w-full max-w-lg bg-white rounded-3xl p-7 border border-emerald-500/20 shadow-2xl shadow-emerald-950/10 space-y-6 text-xs z-10 max-h-[95vh] overflow-y-auto transform scale-100 transition-all">
+      {showForm && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm overflow-y-auto animate-fade-in">
+          <div className="relative w-full max-w-lg bg-white rounded-3xl p-7 border border-emerald-500/20 shadow-2xl shadow-emerald-950/10 space-y-6 text-xs my-auto transform scale-100 transition-all">
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
               <div className="flex items-center gap-3">
@@ -480,7 +478,8 @@ export const DailySchedulePage: React.FC<DailySchedulePageProps> = ({
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* --- DAILY TASKS TABLE (DESKTOP) & LIST (MOBILE) --- */}
@@ -793,9 +792,9 @@ export const DailySchedulePage: React.FC<DailySchedulePageProps> = ({
       )}
 
       {/* EDIT TASK MODAL */}
-      {editingTask && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl p-5 shadow-2xl border border-emerald-200 w-full max-w-md space-y-4 text-xs">
+      {editingTask && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm overflow-y-auto animate-fade-in">
+          <div className="bg-white rounded-3xl p-5 shadow-2xl border border-emerald-200 w-full max-w-md space-y-4 text-xs my-auto">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100">
               <h3 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
                 <Edit3 className="w-4 h-4 text-emerald-600" />
@@ -885,7 +884,8 @@ export const DailySchedulePage: React.FC<DailySchedulePageProps> = ({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* DETAILED MODAL */}

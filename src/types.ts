@@ -80,6 +80,8 @@ export interface AppState {
   dailyTasks: DailyTask[];
   financials: FinancialTransaction[];
   loans: LoanInstallment[];
+  financialFilterStart?: string;
+  financialFilterEnd?: string;
   lastSavedISO: string;
   googleDriveConnected?: boolean;
   userEmail?: string;

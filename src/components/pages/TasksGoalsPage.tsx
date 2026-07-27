@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Plus,
   Search,
@@ -313,9 +314,9 @@ export const TasksGoalsPage: React.FC<TasksGoalsPageProps> = ({
       </div>
 
       {/* ADD / EDIT TASK FORM POPUP MODAL */}
-      {showAddForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl border border-teal-100 shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-hidden flex flex-col animate-scale-up">
+      {showAddForm && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
+          <div className="bg-white rounded-3xl border border-teal-100 shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-hidden flex flex-col my-auto animate-scale-up">
             {/* Styled Modal Header */}
             <div className="bg-gradient-to-r from-teal-900 via-teal-800 to-emerald-800 text-white p-5 flex items-center justify-between shadow-md">
               <div className="flex items-center gap-3">
@@ -472,13 +473,14 @@ export const TasksGoalsPage: React.FC<TasksGoalsPageProps> = ({
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* --- TASK INBOX / ARCHIVE POPUP MODAL --- */}
-      {showArchive && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl border border-amber-200 shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col animate-scale-up">
+      {showArchive && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
+          <div className="bg-white rounded-3xl border border-amber-200 shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col my-auto animate-scale-up">
             {/* Modal Header */}
             <div className="bg-gradient-to-r from-amber-600 via-amber-700 to-yellow-600 text-white p-5 flex items-center justify-between shadow-md">
               <div className="flex items-center gap-3">
@@ -623,7 +625,8 @@ export const TasksGoalsPage: React.FC<TasksGoalsPageProps> = ({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* --- MAIN TASKS TABLE (DESKTOP) & CARDS (MOBILE) --- */}
@@ -1057,9 +1060,9 @@ export const TasksGoalsPage: React.FC<TasksGoalsPageProps> = ({
       )}
 
       {/* QUICK DATETIME & REMINDER SETTING MODAL */}
-      {taskForDateTime && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl border border-teal-200 shadow-2xl w-full max-w-md overflow-hidden flex flex-col animate-scale-up">
+      {taskForDateTime && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
+          <div className="bg-white rounded-3xl border border-teal-200 shadow-2xl w-full max-w-md overflow-hidden flex flex-col my-auto animate-scale-up">
             {/* Modal Header */}
             <div className="bg-gradient-to-r from-teal-800 via-teal-700 to-emerald-800 text-white p-5 flex items-center justify-between shadow-md">
               <div className="flex items-center gap-3">
@@ -1143,7 +1146,8 @@ export const TasksGoalsPage: React.FC<TasksGoalsPageProps> = ({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* DETAILED DESCRIPTION POPUP MODAL */}

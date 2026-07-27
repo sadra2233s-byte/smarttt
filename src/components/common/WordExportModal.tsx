@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { FileText, Download, Calendar, Check, X, Loader2 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { toJpeg } from 'html-to-image';
@@ -1236,8 +1237,9 @@ export const WordExportModal: React.FC<WordExportModalProps> = ({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
-        <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-lg overflow-hidden transform transition-all">
+      {createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-lg overflow-hidden transform transition-all my-auto">
           {/* Header */}
           <div className="bg-gradient-to-r from-teal-800 via-emerald-700 to-cyan-800 p-5 text-white flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -1452,7 +1454,9 @@ export const WordExportModal: React.FC<WordExportModalProps> = ({
             </div>
           </div>
         </div>
-      </div>
+      </div>,
+      document.body
+    )}
 
       {/* Date Picker Helper */}
       <JalaliDatePickerModal

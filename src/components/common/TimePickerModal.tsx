@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Clock, Check, X, Plus, Minus } from 'lucide-react';
 import { toPersianDigits } from '../../utils/jalali';
 
@@ -158,9 +159,9 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white rounded-3xl shadow-2xl border border-teal-200 w-full max-w-xs sm:max-w-sm overflow-hidden transform transition-all select-none flex flex-col">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
+      <div className="bg-white rounded-3xl shadow-2xl border border-teal-200 w-full max-w-xs sm:max-w-sm overflow-hidden transform transition-all select-none flex flex-col my-auto">
         {/* Modal Header */}
         <div className="bg-gradient-to-r from-teal-900 via-teal-800 to-emerald-800 p-4 text-white flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -423,6 +424,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

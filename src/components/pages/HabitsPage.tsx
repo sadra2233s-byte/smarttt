@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Plus,
   Trash2,
@@ -725,9 +726,9 @@ export const HabitsPage: React.FC<HabitsPageProps> = ({
       </div>
 
       {/* MOBILE DETAIL HABIT MODAL */}
-      {mobileModalHabit && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl p-5 shadow-2xl border border-slate-200 w-full max-w-sm space-y-4">
+      {mobileModalHabit && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
+          <div className="bg-white rounded-3xl p-5 shadow-2xl border border-slate-200 w-full max-w-sm space-y-4 my-auto">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100">
               <h3 className="font-extrabold text-slate-900 text-sm">{mobileModalHabit.title}</h3>
               <button onClick={() => setMobileModalHabitId(null)} className="p-1 hover:bg-slate-100 rounded-full">
@@ -799,7 +800,8 @@ export const HabitsPage: React.FC<HabitsPageProps> = ({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* WEEK SELECTOR JALALI CALENDAR MODAL */}
@@ -814,9 +816,9 @@ export const HabitsPage: React.FC<HabitsPageProps> = ({
       />
 
       {/* ADD NEW HABIT MODAL */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl shadow-2xl border border-teal-100 w-full max-w-sm overflow-hidden transform transition-all select-none flex flex-col">
+      {isAddModalOpen && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
+          <div className="bg-white rounded-3xl shadow-2xl border border-teal-100 w-full max-w-sm overflow-hidden transform transition-all select-none flex flex-col my-auto">
             {/* Modal Header */}
             <div className="bg-gradient-to-r from-indigo-900 via-indigo-800 to-teal-900 p-4 text-white flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -865,7 +867,8 @@ export const HabitsPage: React.FC<HabitsPageProps> = ({
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* FLOAT TOAST NOTIFICATION */}

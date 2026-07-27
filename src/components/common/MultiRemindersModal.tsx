@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Bell, Clock, Plus, Trash2, X, Check, Info, Calendar, ExternalLink } from 'lucide-react';
 import { formatJalaliShort, toPersianDigits } from '../../utils/jalali';
 import { TimePickerModal } from './TimePickerModal';
@@ -152,10 +153,9 @@ export const MultiRemindersModal: React.FC<MultiRemindersModalProps> = ({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs overflow-y-auto animate-fade-in">
-        <div className="absolute inset-0" onClick={onClose} />
-        
-        <div className={`relative w-full max-w-lg bg-white rounded-3xl overflow-hidden shadow-2xl ${style.shadow} border ${style.modalBorder} z-10 text-xs`}>
+      {createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs overflow-y-auto animate-fade-in">
+          <div className={`relative w-full max-w-lg bg-white rounded-3xl overflow-hidden shadow-2xl ${style.shadow} border ${style.modalBorder} text-xs my-auto`}>
           {/* Header */}
           <div className={`bg-gradient-to-r ${style.gradient} p-4 sm:p-5 text-white flex items-center justify-between`}>
             <div className="flex items-center gap-2.5">
@@ -317,7 +317,9 @@ export const MultiRemindersModal: React.FC<MultiRemindersModalProps> = ({
             </div>
           </div>
         </div>
-      </div>
+      </div>,
+      document.body
+    )}
 
       <TimePickerModal
         isOpen={timePickerOpen}
