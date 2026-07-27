@@ -56,7 +56,7 @@ export const InstallModal: React.FC<InstallModalProps> = ({
               <Download className="w-6 h-6 text-teal-200" />
             </div>
             <div>
-              <h3 className="text-lg font-bold">نصب اپلیکیشن برنامه‌ریز هوشمند</h3>
+              <h3 className="text-lg font-bold">نصب اپلیکیشن Smart Planner</h3>
               <p className="text-xs text-teal-100 mt-0.5">دسترس‌پذیری سریع، کارکرد آفلاین و تجربه اپلیکیشن بومی</p>
             </div>
           </div>

@@ -1,9 +1,9 @@
 {
-  "name": "برنامه‌ریز هوشمند | Smart Planner",
-  "short_name": "اسمارت پلنر",
+  "name": "Smart Planner",
+  "short_name": "Smart Planner",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f8fafc",
+  "background_color": "#0f766e",
   "theme_color": "#0f766e",
   "icons": [
     {

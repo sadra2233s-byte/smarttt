@@ -1,71 +1,136 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#14b8a6" />
-      <stop offset="50%" stop-color="#0d9488" />
-      <stop offset="100%" stop-color="#312e81" />
-    </linearGradient>
-    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#ffffff" />
-      <stop offset="100%" stop-color="#f8fafc" />
-    </linearGradient>
-    <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#0f766e" />
-      <stop offset="100%" stop-color="#4f46e5" />
-    </linearGradient>
-    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#10b981" />
-      <stop offset="100%" stop-color="#059669" />
-    </linearGradient>
-    <filter id="dropShadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="16" stdDeviation="16" flood-color="#000000" flood-opacity="0.3" />
+    <!-- Master Drop Shadow for 3D Icon Floating Effect -->
+    <filter id="iconShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="24" stdDeviation="20" flood-color="#7c2d12" flood-opacity="0.35" />
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#451a03" flood-opacity="0.25" />
     </filter>
+
+    <!-- Deep Emboss / Inner Shadow for Checkmark -->
+    <filter id="embossShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feComponentTransfer in="SourceAlpha">
+        <feFuncA type="linear" slope="0.7"/>
+      </feComponentTransfer>
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feOffset dx="0" dy="3" result="offset"/>
+      <feComposite operator="out" in2="SourceAlpha" result="inverse"/>
+      <feFlood flood-color="#78350f" flood-opacity="0.7" result="color"/>
+      <feComposite operator="in" in2="inverse" result="shadow"/>
+      <feComposite operator="over" in2="SourceGraphic"/>
+    </filter>
+
+    <!-- Elastic Strap Shadow -->
+    <filter id="strapShadow" x="-30%" y="-20%" width="160%" height="140%">
+      <feDropShadow dx="-2" dy="2" stdDeviation="3" flood-color="#78350f" flood-opacity="0.4" />
+    </filter>
+
+    <!-- Outer Casing Gradient -->
+    <linearGradient id="backCasingGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b" />
+      <stop offset="60%" stop-color="#d97706" />
+      <stop offset="100%" stop-color="#b45309" />
+    </linearGradient>
+
+    <!-- Front Cover Leather Gradient -->
+    <linearGradient id="coverGrad" x1="10%" y1="0%" x2="90%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a" />
+      <stop offset="25%" stop-color="#fde047" />
+      <stop offset="70%" stop-color="#eab308" />
+      <stop offset="100%" stop-color="#ca8a04" />
+    </linearGradient>
+
+    <!-- Inner Checkmark Gradient (Slightly darker for debossed look) -->
+    <linearGradient id="checkmarkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ca8a04" />
+      <stop offset="50%" stop-color="#d97706" />
+      <stop offset="100%" stop-color="#b45309" />
+    </linearGradient>
+
+    <!-- Book Pages Gradient -->
+    <linearGradient id="pagesGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="30%" stop-color="#f8fafc" />
+      <stop offset="70%" stop-color="#e2e8f0" />
+      <stop offset="100%" stop-color="#cbd5e1" />
+    </linearGradient>
+
+    <!-- Elastic Band Texture Gradient -->
+    <linearGradient id="strapGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#d97706" />
+      <stop offset="30%" stop-color="#f59e0b" />
+      <stop offset="70%" stop-color="#d97706" />
+      <stop offset="100%" stop-color="#b45309" />
+    </linearGradient>
+
+    <!-- Subtle Gloss/Highlight -->
+    <linearGradient id="glossGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.4" />
+      <stop offset="40%" stop-color="#ffffff" stop-opacity="0.1" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+    </linearGradient>
   </defs>
 
-  <!-- Background Rounded Squircle with Gradient -->
-  <rect width="512" height="512" rx="118" fill="url(#bgGrad)" />
-  
-  <!-- Glossy overlay -->
-  <path d="M 0 0 L 512 0 L 512 256 Q 256 320 0 256 Z" fill="#ffffff" opacity="0.08" />
-
-  <!-- Main Planner Card with Drop Shadow -->
-  <g filter="url(#dropShadow)" transform="translate(64, 64)">
-    <rect width="384" height="384" rx="56" fill="url(#cardGrad)" />
-    
-    <!-- Header Banner -->
-    <path d="M 0 56 A 56 56 0 0 1 56 0 L 328 0 A 56 56 0 0 1 384 56 L 384 136 L 0 136 Z" fill="url(#headerGrad)" />
-    
-    <!-- Spiral Binding Rings -->
-    <g fill="#94a3b8">
-      <rect x="96" y="20" width="28" height="56" rx="14" />
-      <rect x="260" y="20" width="28" height="56" rx="14" />
-    </g>
-
-    <!-- Header Dots -->
-    <circle cx="56" cy="68" r="8" fill="#ffffff" opacity="0.9" />
-    <circle cx="84" cy="68" r="8" fill="#ffffff" opacity="0.5" />
-    <circle cx="112" cy="68" r="8" fill="#ffffff" opacity="0.3" />
-
-    <!-- Task Item 1 (Completed with Check) -->
-    <g transform="translate(48, 176)">
-      <rect x="0" y="0" width="40" height="40" rx="12" fill="url(#accentGrad)" />
-      <path d="M 12 20 L 18 26 L 28 14" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
-      <rect x="64" y="10" width="180" height="12" rx="6" fill="#cbd5e1" />
-      <rect x="64" y="28" width="100" height="8" rx="4" fill="#e2e8f0" />
-    </g>
-
-    <!-- Task Item 2 (Active Planner Row) -->
-    <g transform="translate(48, 252)">
-      <rect x="0" y="0" width="40" height="40" rx="12" fill="#e0e7ff" />
-      <rect x="12" y="12" width="16" height="16" rx="4" fill="#4f46e5" />
-      <rect x="64" y="10" width="220" height="12" rx="6" fill="#334155" />
-      <rect x="64" y="28" width="140" height="8" rx="4" fill="#94a3b8" />
-    </g>
-
-    <!-- Sparkle Star Badge for Smart AI touch -->
-    <g transform="translate(310, 110)">
-      <circle cx="24" cy="24" r="32" fill="#ffffff" stroke="#e2e8f0" stroke-width="2" />
-      <path d="M 24 8 Q 24 24 8 24 Q 24 24 24 40 Q 24 24 40 24 Q 24 24 24 8 Z" fill="#f59e0b" />
-    </g>
+  <!-- Ground Shadow underneath icon -->
+  <g filter="url(#iconShadow)">
+    <!-- 1. Outer Backing / Spine & Casing rounded square -->
+    <rect x="56" y="56" width="400" height="400" rx="96" fill="url(#backCasingGrad)" />
   </g>
+
+  <!-- 2. Book Pages Layer at the Bottom Edge -->
+  <g transform="translate(0, 0)">
+    <!-- Bottom Pages Block -->
+    <path d="M 120 380 Q 256 405 392 380 L 380 422 Q 256 440 132 422 Z" fill="url(#pagesGrad)" />
+    <!-- Page horizontal line textures -->
+    <path d="M 125 390 Q 256 412 387 390" stroke="#cbd5e1" stroke-width="2" fill="none" opacity="0.8" />
+    <path d="M 128 400 Q 256 420 384 400" stroke="#94a3b8" stroke-width="2" fill="none" opacity="0.7" />
+    <path d="M 131 410 Q 256 428 381 410" stroke="#94a3b8" stroke-width="2" fill="none" opacity="0.6" />
+  </g>
+
+  <!-- 3. Main Leather Front Cover Notebook -->
+  <rect x="68" y="68" width="376" height="340" rx="80" fill="url(#coverGrad)" />
+
+  <!-- Cover Top Gloss Highlight -->
+  <rect x="68" y="68" width="376" height="170" rx="80" fill="url(#glossGrad)" />
+
+  <!-- Fine Leather Stitches along Cover Border -->
+  <rect x="84" y="84" width="344" height="308" rx="66" 
+        fill="none" 
+        stroke="#92400e" 
+        stroke-width="3" 
+        stroke-dasharray="8 6" 
+        opacity="0.7" />
+
+  <!-- 4. Embossed Center Checkmark -->
+  <g filter="url(#embossShadow)">
+    <!-- Outer debossed bevel highlight -->
+    <path d="M 210 236 L 246 272 L 318 190" 
+          fill="none" 
+          stroke="#fef08a" 
+          stroke-width="36" 
+          stroke-linecap="round" 
+          stroke-linejoin="round" 
+          opacity="0.6"
+          transform="translate(0, 2)" />
+    
+    <!-- Main Checkmark Path -->
+    <path d="M 210 236 L 246 272 L 318 190" 
+          fill="none" 
+          stroke="url(#checkmarkGrad)" 
+          stroke-width="32" 
+          stroke-linecap="round" 
+          stroke-linejoin="round" />
+  </g>
+
+  <!-- 5. Vertical Elastic Bookmark Strap (Right Side) -->
+  <g filter="url(#strapShadow)">
+    <path d="M 360 60 C 362 60 386 60 388 60 L 372 432 C 370 432 350 432 348 432 Z" fill="url(#strapGrad)" />
+    <!-- Texture ridges on elastic strap -->
+    <path d="M 358 60 L 348 432 M 364 60 L 354 432 M 370 60 L 360 432 M 376 60 L 366 432 M 382 60 L 372 432" 
+          stroke="#78350f" 
+          stroke-width="1" 
+          opacity="0.3" />
+  </g>
+
+  <!-- Edge Soft Highlight Rim -->
+  <rect x="68" y="68" width="376" height="340" rx="80" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.4" />
 </svg>
