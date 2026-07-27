@@ -323,7 +323,7 @@ export const FinancialPage: React.FC<FinancialPageProps> = ({
               : 'text-slate-600 hover:bg-slate-50'
           }`}
         >
-          اقساط و تسهیلات
+          اقساط و تسهیلات ({loans.length})
         </button>
       </div>
 
