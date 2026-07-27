@@ -145,28 +145,14 @@ const INITIAL_SAMPLE_STATE: AppState = {
   lastSavedISO: new Date().toISOString(),
 };
 
-const sanitizeState = (raw: any): AppState | null => {
-  if (!raw || typeof raw !== 'object') return null;
-  if (!Array.isArray(raw.tasks)) return null;
-
-  return {
-    tasks: Array.isArray(raw.tasks) ? raw.tasks : [],
-    habits: Array.isArray(raw.habits) ? raw.habits : [],
-    weeklyNotes: Array.isArray(raw.weeklyNotes) ? raw.weeklyNotes : [],
-    dailyTasks: Array.isArray(raw.dailyTasks) ? raw.dailyTasks : [],
-    financials: Array.isArray(raw.financials) ? raw.financials : [],
-    loans: Array.isArray(raw.loans) ? raw.loans : [],
-    lastSavedISO: raw.lastSavedISO || new Date().toISOString(),
-  };
-};
-
 export default function App() {
   const [appState, setAppState] = useState<AppState>(() => {
     try {
       const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (saved) {
-        const parsed = sanitizeState(JSON.parse(saved));
-        if (parsed) {
+        const parsed = JSON.parse(saved) as AppState;
+        if (parsed && Array.isArray(parsed.tasks)) {
+          // One-time reset to satisfy user's request to clear all weeks and keep only 1 habit in current week
           const hasReset = localStorage.getItem('habits_reset_v3');
           if (!hasReset) {
             const currentWeekKey = formatISODateOnly(getStartOfWeekJalali(new Date()));
@@ -192,16 +178,14 @@ export default function App() {
         }
       }
     } catch (e) {
-      console.error('LocalStorage initial read error:', e);
+      console.error('LocalStorage read error:', e);
     }
+    // Also mark reset flag for new storage
     try {
       localStorage.setItem('habits_reset_v3', 'true');
     } catch (e) {}
     return INITIAL_SAMPLE_STATE;
   });
-
-  const [isHydrated, setIsHydrated] = useState(false);
-  const appStateRef = React.useRef(appState);
 
   const [activeTab, setActiveTab] = useState<PageTab>('tasks');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -212,72 +196,6 @@ export default function App() {
   const [showWordModal, setShowWordModal] = useState(false);
   const [showGoogleDriveModal, setShowGoogleDriveModal] = useState(false);
   const [showInstallModal, setShowInstallModal] = useState(false);
-
-  // Hydrate from IndexedDB / LocalStorage on startup
-  useEffect(() => {
-    let isMounted = true;
-    const hydrateFromStorage = async () => {
-      try {
-        const candidates: AppState[] = [];
-
-        // 1. LocalStorage auto-save
-        const lsAuto = localStorage.getItem(LOCAL_STORAGE_KEY);
-        if (lsAuto) {
-          try {
-            const parsed = sanitizeState(JSON.parse(lsAuto));
-            if (parsed) candidates.push(parsed);
-          } catch (e) {}
-        }
-
-        // 2. LocalStorage manual backup
-        const lsManual = localStorage.getItem(MANUAL_BACKUP_KEY);
-        if (lsManual) {
-          try {
-            const parsed = sanitizeState(JSON.parse(lsManual));
-            if (parsed) candidates.push(parsed);
-          } catch (e) {}
-        }
-
-        // 3. IndexedDB auto-save
-        const idbAuto = await loadFromIndexedDB('app_state');
-        const parsedIdbAuto = sanitizeState(idbAuto);
-        if (parsedIdbAuto) candidates.push(parsedIdbAuto);
-
-        // 4. IndexedDB manual backup
-        const idbManual = await loadFromIndexedDB('manual_backup');
-        const parsedIdbManual = sanitizeState(idbManual);
-        if (parsedIdbManual) candidates.push(parsedIdbManual);
-
-        if (candidates.length > 0) {
-          candidates.sort((a, b) => {
-            const timeA = new Date(a.lastSavedISO || 0).getTime();
-            const timeB = new Date(b.lastSavedISO || 0).getTime();
-            if (timeA !== timeB) return timeB - timeA;
-            const countA = a.tasks.length + a.dailyTasks.length + a.habits.length + a.financials.length + a.loans.length;
-            const countB = b.tasks.length + b.dailyTasks.length + b.habits.length + b.financials.length + b.loans.length;
-            return countB - countA;
-          });
-
-          const best = candidates[0];
-          if (isMounted) {
-            setAppState(best);
-          }
-        }
-      } catch (err) {
-        console.error('Storage hydration error:', err);
-      } finally {
-        if (isMounted) {
-          setIsHydrated(true);
-        }
-      }
-    };
-
-    hydrateFromStorage();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   // Online status & PWA install prompt listener
   useEffect(() => {
@@ -319,50 +237,13 @@ export default function App() {
 
   // Auto-save to LocalStorage and IndexedDB whenever appState changes
   useEffect(() => {
-    appStateRef.current = appState;
-
-    if (!isHydrated) return;
-
     try {
-      const stateToSave = { ...appState, lastSavedISO: new Date().toISOString() };
-      const serialized = JSON.stringify(stateToSave);
-      localStorage.setItem(LOCAL_STORAGE_KEY, serialized);
-      saveToIndexedDB('app_state', stateToSave);
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(appState));
+      saveToIndexedDB('app_state', appState);
     } catch (e) {
       console.error('Failed to save state to localStorage/IndexedDB:', e);
     }
-  }, [appState, isHydrated]);
-
-  // Synchronous flush when page is hidden, blurred, or closed
-  useEffect(() => {
-    const flushToStorage = () => {
-      if (!appStateRef.current) return;
-      try {
-        const stateToSave = { ...appStateRef.current, lastSavedISO: new Date().toISOString() };
-        const serialized = JSON.stringify(stateToSave);
-        localStorage.setItem(LOCAL_STORAGE_KEY, serialized);
-        saveToIndexedDB('app_state', stateToSave);
-      } catch (e) {
-        console.error('Failed to flush storage on unload/hide:', e);
-      }
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        flushToStorage();
-      }
-    };
-
-    window.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('pagehide', flushToStorage);
-    window.addEventListener('beforeunload', flushToStorage);
-
-    return () => {
-      window.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('pagehide', flushToStorage);
-      window.removeEventListener('beforeunload', flushToStorage);
-    };
-  }, []);
+  }, [appState]);
 
   const handleSaveLocal = async () => {
     const updated = { ...appState, lastSavedISO: new Date().toISOString() };
