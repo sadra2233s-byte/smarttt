@@ -312,7 +312,7 @@ export const FinancialPage: React.FC<FinancialPageProps> = ({
               : 'text-slate-600 hover:bg-slate-50'
           }`}
         >
-          جدول تراکنش‌های مالی (هزینه و درآمد)
+          تراکنش‌های مالی
         </button>
         <button
           type="button"
@@ -323,7 +323,7 @@ export const FinancialPage: React.FC<FinancialPageProps> = ({
               : 'text-slate-600 hover:bg-slate-50'
           }`}
         >
-          جدول اقساط و تسهیلات ({loans.length})
+          اقساط و تسهیلات
         </button>
       </div>
 

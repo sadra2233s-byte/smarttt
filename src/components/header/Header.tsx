@@ -122,9 +122,6 @@ export const Header: React.FC<HeaderProps> = ({
               <h1 className="text-base sm:text-lg font-black tracking-tight text-slate-800">
                 Smart Planner
               </h1>
-              <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] font-bold bg-teal-50 text-teal-700 border border-teal-200/80 rounded-full">
-                نسخه هوشمند PWA
-              </span>
             </div>
             <p className="text-[11px] text-slate-500 font-medium hidden xs:block">
               نظم، آرامش و پیگیری هوشمند هدف‌ها
