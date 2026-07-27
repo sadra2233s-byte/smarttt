@@ -61,33 +61,36 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      setIsConnected(!!getGoogleAccessToken());
-      setUserEmail(getActiveGoogleEmail());
+      const email = getActiveGoogleEmail();
+      const token = getGoogleAccessToken();
+      setIsConnected(!!token || !!email);
+      setUserEmail(email);
       setClientId(getStoredClientId());
     }
   }, [isOpen]);
 
   if (!isOpen) return null;
 
-  // Handle Google OAuth Connection
-  const handleConnect = async () => {
+  const hasActiveToken = !!getGoogleAccessToken();
+
+  // Handle Google OAuth Connection / Renew Session
+  const handleConnect = async (forceConsent: boolean = false) => {
     setIsConnecting(true);
     setStatusMsg(null);
     try {
       if (!clientId || !clientId.includes('googleusercontent.com')) {
         throw new Error('کلاینت آی‌دی (Client ID) نامعتبر است. لطفاً کلاینت آی‌دی معتبری وارد کنید.');
       }
-      const result = await requestGisToken(clientId);
+      const result = await requestGisToken(clientId, forceConsent);
       setGoogleAccessToken(result.token);
       setActiveGoogleEmail(result.email);
       setIsConnected(true);
       setUserEmail(result.email);
       setStatusMsg({
         type: 'success',
-        text: `اتصال با موفقیت برقرار شد! خوش آمدید: ${result.email}. هم‌اکنون می‌توانید از همگام‌سازی ابری استفاده کنید.`,
+        text: `نشست حساب گوگل شما با موفقیت بروزرسانی شد: ${result.email}. هم‌اکنون می‌توانید از همگام‌سازی ابری استفاده کنید.`,
       });
     } catch (err: any) {
-      // Intuitively check if it failed due to origin mismatch or generic error
       let errorMessage = err.message || 'خطا در برقراری اتصال با گوگل.';
       if (errorMessage.includes('origin_mismatch') || errorMessage.includes('400') || errorMessage.includes('policy')) {
         errorMessage = `خطای ۴۰۰ (عدم همخوانی منشا - origin_mismatch) از طرف گوگل رخ داد. کلاینت آی‌دی شما صحیح است، اما آدرس این سایت در تنظیمات آن در گوگل کلود مجاز نشده است. لطفاً بخش تنظیمات کلاینت آی‌دی (آیکون چرخ‌دنده ⚙️) را باز کرده و راهنما را بخوانید.`;
@@ -390,20 +393,40 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({
               <div className="p-3 bg-emerald-50/50 border border-emerald-200 rounded-xl space-y-3">
                 <div className="flex items-center justify-between text-[11px]">
                   <div className="flex items-center gap-1.5 text-emerald-800 font-bold">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <div className={`w-2 h-2 rounded-full ${hasActiveToken ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
                     <span>متصل به:</span>
                     <span className="font-mono text-slate-600 text-[10px]">{userEmail}</span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="flex items-center gap-1 text-rose-600 hover:text-rose-800 font-bold hover:underline"
-                    title="خروج از حساب گوگل"
-                  >
-                    <LogOut className="w-3.5 h-3.5" />
-                    <span>خروج</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {!hasActiveToken && (
+                      <button
+                        type="button"
+                        onClick={() => handleConnect(false)}
+                        disabled={isConnecting}
+                        className="text-[10px] text-amber-700 bg-amber-100/80 hover:bg-amber-200 px-2 py-0.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1"
+                        title="تمدید یک-کلیکی نشست گوگل"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${isConnecting ? 'animate-spin' : ''}`} />
+                        <span>تمدید نشست</span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="flex items-center gap-1 text-rose-600 hover:text-rose-800 font-bold hover:underline"
+                      title="خروج از حساب گوگل"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>خروج</span>
+                    </button>
+                  </div>
                 </div>
+
+                {!hasActiveToken && (
+                  <div className="p-2 bg-amber-50 border border-amber-200/70 rounded-lg text-[10px] text-amber-800 leading-relaxed">
+                    💡 <span className="font-bold">نکته امنیتی گوگل:</span> توکن‌های دسترسی گوگل پس از ۱ ساعت منقضی می‌شوند. برنامه‌نویسی جدید طوری انجام شده که هنگام ذخیره یا بازیابی، نشست شما خودکار تمدید شود (یا می‌توانید دکمه «تمدید نشست» بالای صفحه را بزنید).
+                  </div>
+                )}
 
                 <p className="text-[10px] text-emerald-700 leading-relaxed text-right">
                   تمامی وضعیت اهداف، برنامه‌ها، تراکنش‌ها و یادداشت‌های شما با امنیت کامل در فایلی اختصاصی به نام <span className="font-mono font-bold text-slate-800">smart_planner_backup.json</span> در ریشه گوگل درایو شما ذخیره و بازیابی می‌شود.

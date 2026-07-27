@@ -78,7 +78,7 @@ function loadGisScript(): Promise<void> {
 
 // Authenticate directly using Google Identity Services (GIS) Token Client Flow (Implicit Flow)
 // This uses a popup window communicating directly with Google, avoiding any middleman and redirect_uri mismatch issues!
-export async function requestGisToken(clientId: string): Promise<{ email: string; token: string }> {
+export async function requestGisToken(clientId: string, promptConsent: boolean = true): Promise<{ email: string; token: string }> {
   await loadGisScript();
 
   return new Promise((resolve, reject) => {
@@ -108,12 +108,11 @@ export async function requestGisToken(clientId: string): Promise<{ email: string
               headers: { Authorization: `Bearer ${token}` }
             });
             
-            if (!userInfoRes.ok) {
-              throw new Error('خطا در دریافت اطلاعات کاربری از گوگل.');
+            let email = getActiveGoogleEmail() || 'حساب گوگل';
+            if (userInfoRes.ok) {
+              const userInfo = await userInfoRes.json();
+              if (userInfo.email) email = userInfo.email;
             }
-            
-            const userInfo = await userInfoRes.json();
-            const email = userInfo.email || 'حساب گوگل';
             
             setGoogleAccessToken(token);
             setActiveGoogleEmail(email);
@@ -122,8 +121,9 @@ export async function requestGisToken(clientId: string): Promise<{ email: string
           } catch (profileErr) {
             // Fallback if profile info fetch fails
             setGoogleAccessToken(token);
-            setActiveGoogleEmail('حساب گوگل');
-            resolve({ email: 'حساب گوگل', token });
+            const fallbackEmail = getActiveGoogleEmail() || 'حساب گوگل';
+            setActiveGoogleEmail(fallbackEmail);
+            resolve({ email: fallbackEmail, token });
           }
         },
         error_callback: (err: any) => {
@@ -131,7 +131,7 @@ export async function requestGisToken(clientId: string): Promise<{ email: string
         }
       });
 
-      client.requestAccessToken({ prompt: 'consent' });
+      client.requestAccessToken({ prompt: promptConsent ? 'consent' : '' });
     } catch (err: any) {
       reject(new Error(err.message || 'خطا در راه‌اندازی احراز هویت گوگل.'));
     }
@@ -161,10 +161,20 @@ async function findBackupFileId(token: string): Promise<string | null> {
 }
 
 // Save the state as a single JSON file in Google Drive
-export async function saveToGoogleDrive(state: AppState): Promise<boolean> {
-  const token = getGoogleAccessToken();
+export async function saveToGoogleDrive(state: AppState, isRetry: boolean = false): Promise<boolean> {
+  let token = getGoogleAccessToken();
   if (!token) {
-    throw new Error('ابتدا باید به حساب گوگل خود متصل شوید.');
+    // Attempt silent auto-refresh if previously logged in
+    if (!isRetry && getActiveGoogleEmail()) {
+      try {
+        const renewed = await requestGisToken(getStoredClientId(), false);
+        token = renewed.token;
+      } catch {
+        throw new Error('نشست گوگل شما منقضی شده است. لطفاً روی دکمه «تمدید نشست» کلیک کنید.');
+      }
+    } else {
+      throw new Error('ابتدا باید به حساب گوگل خود متصل شوید.');
+    }
   }
 
   try {
@@ -229,8 +239,16 @@ export async function saveToGoogleDrive(state: AppState): Promise<boolean> {
     }
   } catch (err: any) {
     if (err.message === 'EXPIRED_TOKEN') {
-      logoutGoogleDrive();
-      throw new Error('توکن منقضی شده است. لطفا دوباره متصل شوید.');
+      setGoogleAccessToken(null); // Clear expired token, keep active email
+      if (!isRetry) {
+        try {
+          const renewed = await requestGisToken(getStoredClientId(), false);
+          return await saveToGoogleDrive(state, true);
+        } catch {
+          throw new Error('نشست گوگل شما منقضی شده است. لطفاً روی دکمه «تمدید نشست» کلیک کنید.');
+        }
+      }
+      throw new Error('نشست گوگل شما منقضی شده است. لطفاً روی دکمه «تمدید نشست» کلیک کنید.');
     }
     if (err.message === 'INSUFFICIENT_SCOPE') {
       throw new Error('عدم تایید دسترسی به گوگل درایو. حتما هنگام اتصال تیک دسترسی را فعال کنید.');
@@ -240,10 +258,20 @@ export async function saveToGoogleDrive(state: AppState): Promise<boolean> {
 }
 
 // Load state from Google Drive JSON file
-export async function loadFromGoogleDrive(): Promise<AppState | null> {
-  const token = getGoogleAccessToken();
+export async function loadFromGoogleDrive(isRetry: boolean = false): Promise<AppState | null> {
+  let token = getGoogleAccessToken();
   if (!token) {
-    throw new Error('ابتدا باید به حساب گوگل خود متصل شوید.');
+    // Attempt silent auto-refresh if previously logged in
+    if (!isRetry && getActiveGoogleEmail()) {
+      try {
+        const renewed = await requestGisToken(getStoredClientId(), false);
+        token = renewed.token;
+      } catch {
+        throw new Error('نشست گوگل شما منقضی شده است. لطفاً روی دکمه «تمدید نشست» کلیک کنید.');
+      }
+    } else {
+      throw new Error('ابتدا باید به حساب گوگل خود متصل شوید.');
+    }
   }
 
   try {
@@ -267,8 +295,16 @@ export async function loadFromGoogleDrive(): Promise<AppState | null> {
     return data as AppState;
   } catch (err: any) {
     if (err.message === 'EXPIRED_TOKEN') {
-      logoutGoogleDrive();
-      throw new Error('توکن منقضی شده است. لطفا دوباره متصل شوید.');
+      setGoogleAccessToken(null); // Clear expired token, keep active email
+      if (!isRetry) {
+        try {
+          const renewed = await requestGisToken(getStoredClientId(), false);
+          return await loadFromGoogleDrive(true);
+        } catch {
+          throw new Error('نشست گوگل شما منقضی شده است. لطفاً روی دکمه «تمدید نشست» کلیک کنید.');
+        }
+      }
+      throw new Error('نشست گوگل شما منقضی شده است. لطفاً روی دکمه «تمدید نشست» کلیک کنید.');
     }
     if (err.message === 'INSUFFICIENT_SCOPE') {
       throw new Error('عدم تایید دسترسی به گوگل درایو. حتما هنگام اتصال تیک دسترسی را فعال کنید.');
