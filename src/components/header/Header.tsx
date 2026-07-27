@@ -112,10 +112,10 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3">
         {/* Brand Logo & Name */}
         <div className="flex items-center gap-3">
-          <img 
-            src="/app-icon.jpg" 
-            alt="آیکون دفترچه برنامه‌ریز" 
-            className="w-10 h-10 rounded-2xl object-cover shadow-md border border-slate-200"
+          <img
+            src="/app-icon.jpg"
+            alt="Smart Planner Icon"
+            className="w-10 h-10 rounded-2xl object-cover shadow-md border border-amber-200/80 hover:scale-105 transition-transform"
             referrerPolicy="no-referrer"
           />
           <div>

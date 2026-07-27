@@ -52,15 +52,15 @@ export const InstallModal: React.FC<InstallModalProps> = ({
             <X className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-3">
-            <img 
-              src="/app-icon.jpg" 
-              alt="لوگوی دفترچه برنامه‌ریز" 
-              className="w-12 h-12 rounded-2xl object-cover shadow-md border border-white/20"
+            <img
+              src="/app-icon.jpg"
+              alt="Smart Planner Icon"
+              className="w-12 h-12 rounded-2xl object-cover shadow-md border-2 border-white/30 shrink-0"
               referrerPolicy="no-referrer"
             />
             <div>
               <h3 className="text-lg font-bold">نصب اپلیکیشن برنامه‌ریز هوشمند</h3>
-              <p className="text-xs text-teal-100 mt-0.5">دسترس‌پذیری سریع، کارکرد آفلاین و آیکون اختصاصی</p>
+              <p className="text-xs text-teal-100 mt-0.5">دسترس‌پذیری سریع، کارکرد آفلاین و تجربه اپلیکیشن بومی</p>
             </div>
           </div>
         </div>
