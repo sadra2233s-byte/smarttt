@@ -53,7 +53,7 @@ export const InstallModal: React.FC<InstallModalProps> = ({
           </button>
           <div className="flex items-center gap-3">
             <img
-              src="/app-icon.jpg"
+              src="/icon.png"
               alt="Smart Planner Icon"
               className="w-12 h-12 rounded-2xl object-cover shadow-md border-2 border-white/30 shrink-0"
               referrerPolicy="no-referrer"
