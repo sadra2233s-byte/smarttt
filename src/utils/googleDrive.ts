@@ -8,28 +8,28 @@ let cachedAccessToken: string | null = null;
 let cachedEmail: string | null = null;
 
 export function getGoogleAccessToken(): string | null {
-  return cachedAccessToken || sessionStorage.getItem('google_drive_access_token');
+  return cachedAccessToken || localStorage.getItem('google_drive_access_token');
 }
 
 export function setGoogleAccessToken(token: string | null) {
   cachedAccessToken = token;
   if (token) {
-    sessionStorage.setItem('google_drive_access_token', token);
+    localStorage.setItem('google_drive_access_token', token);
   } else {
-    sessionStorage.removeItem('google_drive_access_token');
+    localStorage.removeItem('google_drive_access_token');
   }
 }
 
 export function getActiveGoogleEmail(): string | null {
-  return cachedEmail || sessionStorage.getItem('google_drive_email');
+  return cachedEmail || localStorage.getItem('google_drive_email');
 }
 
 export function setActiveGoogleEmail(email: string | null) {
   cachedEmail = email;
   if (email) {
-    sessionStorage.setItem('google_drive_email', email);
+    localStorage.setItem('google_drive_email', email);
   } else {
-    sessionStorage.removeItem('google_drive_email');
+    localStorage.removeItem('google_drive_email');
   }
 }
 
