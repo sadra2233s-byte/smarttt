@@ -1,12 +1,8 @@
-const CACHE_NAME = 'smart-planner-pwa-v3';
+const CACHE_NAME = 'smart-planner-pwa-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
-  '/manifest.json',
-  '/icon.jpg',
-  '/icon-192.jpg',
-  '/icon-512.jpg',
-  '/icon.svg'
+  '/manifest.json'
 ];
 
 self.addEventListener('install', (event) => {
